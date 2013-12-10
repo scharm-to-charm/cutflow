@@ -148,8 +148,8 @@ int main (int narg, const char* argv[]) {
 	buffer.jet_SamplingMax        ->at(jeti), 
 	buffer.jet_NegativeE          ->at(jeti), 
 	buffer.RunNumber, 
-	20e3, 	
-	10,	
+	20e3, 	//pt cut 20 GeV
+	10,	//eta cut (sort of nonexistent except for extreme cases)
 	JetID::VeryLooseBad);
       TLorentzVector jet_tlv = def->GetJetTLV(); 
       IdLorentzVector jet; 

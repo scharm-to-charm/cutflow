@@ -35,7 +35,7 @@ ROOTLIBS      += -lEG           #for TParticle
 
 # --- set compiler and flags (roll c options and include paths together)
 CXXFLAGS     := -O2 -Wall -fPIC -I$(INC) $(SUSYTOOLS_INC:%=-I%) -g 
-LDFLAGS      := -Wl,-no-undefined
+# LDFLAGS      := -Wl,-no-undefined
 LIBS         := $(shell ./map_libs.sh -l $(ROOTCORE_ROOT))
 
 # rootstuff 
