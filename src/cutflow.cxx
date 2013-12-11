@@ -483,7 +483,9 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.met.Mod() / mass_eff < 0.25) return; 
   counter["met_eff"]++; 
   
-  
+  double mass_bb = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
+  if (mass_bb < 200e3) return; 
+  counter["m_bb"]++; 
 
 } // end of signal region cutflow
 
