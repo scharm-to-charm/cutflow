@@ -52,8 +52,16 @@ void mu_cr_selection(const SelectionObjects&, SUSYObjDef* def,
 std::vector<IdLorentzVector> filter_pass(const std::vector<IdLorentzVector>&); 
 std::vector<IdLorentzVector> filter_fail(const std::vector<IdLorentzVector>&); 
 
-// various utility functions
+// check for c-tags
+bool has_medium_tag(int jet_index, const SusyBuffer& buffer); 
+// for sorting
 bool has_higher_pt(const TLorentzVector& v1, const TLorentzVector& v2); 
+// scalar sum for first n jets
+double scalar_sum_pt(const std::vector<IdLorentzVector>& obj, size_t num); 
+// m_ct function 
+double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2); 
+
+// IO functions
 void dump_counts(const CutCounter&, std::string); 
 bool exists(std::string file_name); 
 
@@ -443,6 +451,21 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.size() < n_jets) return; 
   counter["n_jet"]++; 
     
+    
+  if (so.met.Mod() < 150e3) return; 
+  counter["met_150"]++; 
+    
+  if (so.signal_jets.at(0).Pt() < 130e3) return; 
+  counter["leading_jet_130"]++; 
+
+  if (so.signal_jets.at(1).Pt() < 50e3) return; 
+  counter["second_jet_50"]++; 
+
+  bool medium_first = has_medium_tag(so.signal_jets.at(0).index, buffer); 
+  bool medium_second = has_medium_tag(so.signal_jets.at(1).index, buffer); 
+  if (! (medium_first && medium_second) ) return; 
+  counter["two_ctag"]++; 
+
   TLorentzVector met_4vec; 
   met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
   float min_dphi = 1000; 
@@ -452,14 +475,15 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
     float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
     min_dphi = std::min(deltaphi, min_dphi); 
   }
+
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"]++; 
-    
-  if (so.met.Mod() < 150e3) return; 
-  counter["met_150"]++; 
-    
-  if (so.signal_jets.at(0).Pt() < 150e3) return; 
-  counter["leading_jet_150"]++; 
+
+  double mass_eff = so.met.Mod() + scalar_sum_pt(so.signal_jets, 2); 
+  if (so.met.Mod() / mass_eff < 0.25) return; 
+  counter["met_eff"]++; 
+  
+  
 
 } // end of signal region cutflow
 
@@ -544,6 +568,7 @@ void mu_cr_selection(const SelectionObjects& so, SUSYObjDef* def,
 } // end of mu control region cutflow
 
 
+// ===== selection functions =======
 
 std::vector<IdLorentzVector> filter_pass(
   const std::vector<IdLorentzVector>& in) { 
@@ -587,12 +612,41 @@ A remove_overlaping(const M& mask, A altered, const float delta_r) {
   return altered; 
 } 
 
+// ================= calc functions ==================
+
+bool has_medium_tag(int jet_index, const SusyBuffer& buffer) { 
+  double pb = buffer.jet_flavor_component_jfitc_pb->at(jet_index); 
+  double pc = buffer.jet_flavor_component_jfitc_pc->at(jet_index); 
+  double pu = buffer.jet_flavor_component_jfitc_pu->at(jet_index); 
+  if (log(pc / pu) <  0.95) return false; 
+  if (log(pb / pu) < -0.90) return false; 
+  return true; 
+}
+
 bool has_higher_pt(const TLorentzVector& v1, const TLorentzVector& v2) { 
   return v1.Pt() > v2.Pt(); 
 }
 
+double scalar_sum_pt(const std::vector<IdLorentzVector>& obj, size_t num) { 
+  int n_jets = std::min(num, obj.size()); 
+  double sum = 0.0; 
+  for (std::vector<IdLorentzVector>::const_iterator itr = obj.begin(); 
+       itr < obj.begin() + n_jets; itr++) { 
+    sum += itr->Pt(); 
+  }
+  return sum; 
+}
 
-// ================= utility functions ==================
+double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2) { 
+  double et1 = v1.Pt(); 
+  double et2 = v2.Pt(); 
+  TVector2 diff_pt = v1.Vect().XYvector() - v2.Vect().XYvector(); 
+  double mct2 = std::pow(et1 + et2, 2) - std::pow(diff_pt.Mod(), 2); 
+  return std::sqrt(mct2); 
+}
+
+
+// ================= IO functions ==================
 
 void dump_counts(const CutCounter& counter, std::string name) { 
   printf(" ========== %s ========== \n",name.c_str()); 
