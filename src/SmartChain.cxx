@@ -2,7 +2,7 @@
 #include "TChain.h"
 #include "TFile.h"
 #include "TError.h"
-#include <boost/format.hpp>
+#include <sstream>
 
 
 SmartChain::SmartChain(std::string tree_name): 
@@ -36,15 +36,15 @@ void SmartChain::SetBranchAddressPrivate(std::string name, void* branch) {
   unsigned branches_found = 0; 
   SetBranchStatus(name.c_str(), 1, &branches_found); 
   if (branches_found != 1) { 
-    std::string prob = (boost::format("missing branch: %s") % name).str();
+    std::string prob = "missing branch: " + name;
     throw MissingBranchError(prob);
   }
 
   int return_code = TChain::SetBranchAddress(name.c_str(), branch); 
   if (return_code != 0 && return_code != 5 ){ 
-    std::string issue = (boost::format("can not set %s , return code %i") % 
-			 name % return_code).str(); 
-    throw std::runtime_error(issue); 
+    std::stringstream issue; 
+    issue << "can not set " << name << ", return code" << return_code;
+    throw std::runtime_error(issue.str()); 
   }
   if (!GetBranch(name.c_str())) { 
     throw_bad_branch(name); 
@@ -56,9 +56,9 @@ void SmartChain::SetBranchAddressPrivate(std::string name, void* branch) {
 // ================ private functions ====================
 
 void SmartChain::throw_bad_branch(std::string name) const { 
-  std::string issue = (boost::format("can't find branch %s, ") % name).str(); 
+  std::string issue = "can't find branch " + name; 
   std::string file = GetFile()->GetName(); 
-  issue.append("bad file: " + file); 
+  issue.append(", bad file: " + file); 
   throw MissingBranchError(issue); 
 
 }
@@ -75,9 +75,8 @@ std::string SmartChain::get_files_string() const {
 
 void SmartChain::check_for_dup(const std::string& name) const { 
   if (m_set_branch_set.count(name)) { 
-    std::string err = (
-      boost::format("setting branch address: %s is already"
-		    " set in %s") % name % GetName()).str(); 
+    std::string err = "setting branch address: " + name + " is already"
+      " set in " + GetName(); 
     throw std::runtime_error(err); 
   }
 }
