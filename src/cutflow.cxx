@@ -38,11 +38,13 @@ struct SelectionObjects
   IdLorentzVector electron_jet; 
   bool is_data; 
   bool pass_grl; 
+  double mc_event_weight; 
 }; 
 
 // multiple object selections are called within the event loop
 void signal_selection(const SelectionObjects&, SUSYObjDef* def, 
-		      const SusyBuffer& buffer, CutCounter& counter); 
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight = 1.0); 
 void el_cr_selection(const SelectionObjects&, SUSYObjDef* def, 
 		     const SusyBuffer& buffer, CutCounter& counter); 
 void mu_cr_selection(const SelectionObjects&, SUSYObjDef* def, 
@@ -99,6 +101,7 @@ int main (int narg, const char* argv[]) {
 
   CutCounter counter; 
   CutCounter signal_counter; 
+  CutCounter signal_counter_mc_wt; 
   CutCounter el_cr_counter; 
   CutCounter mu_cr_counter; 
 
@@ -384,8 +387,12 @@ int main (int narg, const char* argv[]) {
       so.pass_grl = true; 
     }
 
+    // ---- event weights ----
+
     // ---- run the event-wise selections -----
     signal_selection(so, def, buffer, signal_counter); 
+    signal_selection(so, def, buffer, signal_counter_mc_wt, 
+		     buffer.mcevt_weight->at(0).at(0)); 
     el_cr_selection(so, def, buffer, el_cr_counter); 
     mu_cr_selection(so, def, buffer, mu_cr_counter); 
 
@@ -394,6 +401,7 @@ int main (int narg, const char* argv[]) {
   // ------ dump results ------
   dump_counts(counter, "objects"); 
   dump_counts(signal_counter, "signal region"); 
+  dump_counts(signal_counter_mc_wt, "signal region evt wt"); 
   dump_counts(el_cr_counter, "el control region"); 
   dump_counts(mu_cr_counter, "mu control region"); 
 }
@@ -401,97 +409,100 @@ int main (int narg, const char* argv[]) {
 // ----- common preselection runs before the other event wise selections
 // will return false if a cut fails
 bool common_preselection(const SelectionObjects& so, SUSYObjDef* def, 
-			 const SusyBuffer& buffer, CutCounter& counter) { 
-  counter["total"]++; 
+			 const SusyBuffer& buffer, CutCounter& counter, 
+			 double weight) { 
+  counter["total"] += weight; 
 
   if (!so.pass_grl) return false; 
-  counter["grl"]++; 
+  counter["grl"] += weight; 
 
   if (!buffer.trigger) return false; 
-  counter["trigger"]++; 
+  counter["trigger"] += weight; 
 
   bool pass_vxp = def->IsGoodVertex(buffer.vx_nTracks); 
   if (!pass_vxp) return false; 
-  counter["primary_vertex"]++; 
+  counter["primary_vertex"] += weight; 
 
   bool has_lar_error = (buffer.larError == 2); 
   if(has_lar_error && so.is_data) return false; 
-  counter["lar_error"]++; 
+  counter["lar_error"] += weight; 
 
   if (buffer.tileError == 2 && so.is_data) return false; 
-  counter["tile_error"]++; 
+  counter["tile_error"] += weight; 
     
   if (buffer.coreFlags & 0x40000 && so.is_data) return false; 
-  counter["core_flags"]++; 
+  counter["core_flags"] += weight; 
 
   bool has_tile_trip = def->IsTileTrip(buffer.RunNumber, buffer.lbn, 
 				       buffer.EventNumber); 
   if (has_tile_trip) return false; 
-  counter["tile_trip"]++; 
+  counter["tile_trip"] += weight; 
   
   return true; 
 }
 
 void signal_selection(const SelectionObjects& so, SUSYObjDef* def, 
-		      const SusyBuffer& buffer, CutCounter& counter){
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight){
     
-  bool pass_preselection = common_preselection(so, def, buffer, counter); 
+  bool pass_preselection = common_preselection(
+    so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
 
   if (so.veto_electrons.size()) return; 
-  counter["electron_veto"]++; 
+  counter["electron_veto"] += weight; 
 
   if (so.veto_muons.size()) return; 
-  counter["muon_veto"]++; 
+  counter["muon_veto"] += weight; 
 
   if (so.veto_jets.size()) return; 
-  counter["bad_jet_veto"]++; 
+  counter["bad_jet_veto"] += weight; 
     
   const size_t n_jets = 3; 
   if (so.signal_jets.size() < n_jets) return; 
-  counter["n_jet"]++; 
+  counter["n_jet"] += weight; 
     
     
   if (so.met.Mod() < 150e3) return; 
-  counter["met_150"]++; 
+  counter["met_150"] += weight; 
     
   if (so.signal_jets.at(0).Pt() < 130e3) return; 
-  counter["leading_jet_130"]++; 
+  counter["leading_jet_130"] += weight; 
 
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
-  counter["second_jet_50"]++; 
+  counter["second_jet_50"] += weight; 
 
   bool medium_first = has_medium_tag(so.signal_jets.at(0).index, buffer); 
   bool medium_second = has_medium_tag(so.signal_jets.at(1).index, buffer); 
   if (! (medium_first && medium_second) ) return; 
-  counter["two_ctag"]++; 
+  counter["two_ctag"] += weight; 
 
   TLorentzVector met_4vec; 
   met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
   float min_dphi = 1000; 
   for (std::vector<IdLorentzVector>::const_iterator 
 	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets; 
-       itr++) { 
+       itr+= weight) { 
     float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
     min_dphi = std::min(deltaphi, min_dphi); 
   }
 
   if (min_dphi < 0.4) return; 
-  counter["dphi_jetmet_min"]++; 
+  counter["dphi_jetmet_min"] += weight; 
 
   double mass_eff = so.met.Mod() + scalar_sum_pt(so.signal_jets, 2); 
   if (so.met.Mod() / mass_eff < 0.25) return; 
-  counter["met_eff"]++; 
+  counter["met_eff"] += weight; 
   
   double mass_bb = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
   if (mass_bb < 200e3) return; 
-  counter["m_bb"]++; 
+  counter["m_bb"] += weight; 
 
 } // end of signal region cutflow
 
 void el_cr_selection(const SelectionObjects& so, SUSYObjDef* def, 
 		     const SusyBuffer& buffer, CutCounter& counter){
-  bool pass_preselection = common_preselection(so, def, buffer, counter); 
+  bool pass_preselection = common_preselection(so, def, buffer, counter, 1.0); 
   if (!pass_preselection) return; 
     
   if (so.veto_muons.size()) return; 
@@ -533,7 +544,7 @@ void el_cr_selection(const SelectionObjects& so, SUSYObjDef* def,
 void mu_cr_selection(const SelectionObjects& so, SUSYObjDef* def, 
 		     const SusyBuffer& buffer, CutCounter& counter){
 
-  bool pass_preselection = common_preselection(so, def, buffer, counter); 
+  bool pass_preselection = common_preselection(so, def, buffer, counter, 1.0); 
   if (!pass_preselection) return; 
     
   if (so.veto_electrons.size()) return; 
@@ -652,7 +663,7 @@ double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2) {
 
 void dump_counts(const CutCounter& counter, std::string name) { 
   printf(" ========== %s ========== \n",name.c_str()); 
-  typedef std::vector<std::pair<std::string, int> > OrdCuts; 
+  typedef std::vector<std::pair<std::string, double> > OrdCuts; 
   OrdCuts ordered_cuts = counter.get_ordered_cuts(); 
   for (OrdCuts::const_iterator itr = ordered_cuts.begin(); 
        itr != ordered_cuts.end(); itr++) { 
@@ -661,7 +672,7 @@ void dump_counts(const CutCounter& counter, std::string name) {
     if (name.size() < pad_size) { 
       name.insert(0, pad_size - name.size(), ' '); 
     }
-    printf("%s: %i\n", name.c_str(), itr->second); 
+    printf("%s: %.1f\n", name.c_str(), itr->second); 
   }
 }
 

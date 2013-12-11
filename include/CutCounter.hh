@@ -8,10 +8,10 @@
 class CutCounter
 {
 public: 
-  int& operator[](std::string key); 
-  std::vector< std::pair<std::string, int> > get_ordered_cuts() const; 
+  double& operator[](std::string key); 
+  std::vector< std::pair<std::string, double> > get_ordered_cuts() const; 
 private: 
-  std::map<std::string, int> m_counts; 
+  std::map<std::string, double> m_counts; 
   std::vector<std::string> m_cuts; 
 }; 
 
