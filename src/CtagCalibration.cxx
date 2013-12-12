@@ -85,7 +85,6 @@ CtagCalibration::CtagCalibration(std::string cdi_file, std::string env_file):
   m_cdi = new Analysis::CalibrationDataInterfaceROOT(
     "JetFitterCOMBCharm", env_file, ""); 
 
-  using namespace ctag; 
   // WARNING: these are hacks until we get a better CDI
   m_op_string = "-1_0_-0_82"; 
 
@@ -93,8 +92,8 @@ CtagCalibration::CtagCalibration(std::string cdi_file, std::string env_file):
 
   // note that the cuts used here aren't consistent with the ones
   // listed above. 
-  m_anti_u_cut = 0.95; 
-  m_anti_b_cut = -0.9;
+  m_anti_u_cut = JFC_MEDIUM_ANTI_U_CUT; 
+  m_anti_b_cut = JFC_MEDIUM_ANTI_B_CUT;
 
   // flavors start with B and end with DATA, so we can hack a for loop
   for (int flavor = ctag::B; flavor < ctag::DATA; flavor++) { 

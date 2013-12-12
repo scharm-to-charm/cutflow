@@ -2,6 +2,7 @@
 #include "SmartChain.hh"
 #include "SusyBuffer.h"
 #include "CutCounter.hh"
+#include "ctag_defs.hh"		// for JFC_MEDIUM_* cuts
 #include "CtagCalibration.hh"
 
 #include "SUSYTools/SUSYObjDef.h"
@@ -659,8 +660,10 @@ bool has_medium_tag(int jet_index, const SusyBuffer& buffer) {
   double pb = buffer.jet_flavor_component_jfitc_pb->at(jet_index); 
   double pc = buffer.jet_flavor_component_jfitc_pc->at(jet_index); 
   double pu = buffer.jet_flavor_component_jfitc_pu->at(jet_index); 
-  if (log(pc / pu) <  0.95) return false; 
-  if (log(pb / pu) < -0.90) return false; 
+
+  // medium tag values are defined in ctag_defs.hh
+  if (log(pc / pu) < JFC_MEDIUM_ANTI_U_CUT) return false; 
+  if (log(pb / pu) < JFC_MEDIUM_ANTI_B_CUT) return false; 
   return true; 
 }
 
