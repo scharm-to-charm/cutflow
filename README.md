@@ -31,3 +31,29 @@ The executable expects several extra files in the run directory (it's probably e
 
  - `grl.xml`: good runs list (only used with data)
  - `cdi.root`: b-tagging calibration file. For JetFitterCharm it should be `2013-Winter-rel17.2.1.4_MC12-83.root`
+
+### what are all these other files?
+
+Aside from the familiar `makefile` to build, and the `cutflow.cxx` file itself there are a few extra files kicking around: 
+- `map_libs.sh` is used by `makefile` to link to SUSYTools
+- `CtagCalibration` is a wrapper for the c-tagging calibration data interface, hopefully a bit simpler to use. 
+- `CutCounter` is basically a map which keeps track of the order in which cuts are counted (so we can dump them in order)
+- `LinkDef.hh` is used to tell ROOT how to read vectors from D3PDs
+- `SmartChain` is derived from `TChain`, but attempts to fix a few of the more egregious design flaws: 
+
+ - squash the normal 
+```cxx
+jet_something = 0; 
+chain->SetBranchStatus("jet_something", 1); 
+chain->SetBranchAddress("jet_something", &jet_something); 
+```
+song and dance into 
+```cxx
+chain->SetBranch("jet_something", &jet_something); 
+```
+because it's easier to write one line than three (and harder to make mistakes). 
+ - Throw exceptions when branches are missing
+ - Throw exceptions when files are corrupted
+
+- `SusyBuffer` holds the information that's read out of the D3PD. It's something like what comes out of `MakeClass`, but with less garbage code. 
+- `ctag_defs.hh` contains general definitions used by `CtagCalibration`. 
