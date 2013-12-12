@@ -519,14 +519,19 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
 
-
   if (so.signal_jets.size() > 2) {
     if (so.signal_jets.at(2).Pt() > 50e3) return;
   }
   counter["third_jet_veto50"] += weight; 
 
-  //Need to add CHFcut: Chf check in SUSYTUtils; some pt track of jet divided by its pt
-  //If pt of jet > 100 
+  std::vector<size_t> jet_indices
+  for (std::vector<IdLorentzVector>::const_iterator 
+	 itr = so.signal_jets.begin(); itr != so.signal_jets.end(); itr++) { 
+    jet_indices.push_back(itr->index); 
+  }
+  bool clean_for_chf = ChfCheck(jet_indices, buffer, *def); 
+  if (clean_for_chf) return; 
+  counter["pass_chf"] += weight; 
 
   bool medium_first = has_medium_tag(so.signal_jets.at(0).index, buffer); 
   bool medium_second = has_medium_tag(so.signal_jets.at(1).index, buffer); 

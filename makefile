@@ -69,7 +69,7 @@ all: $(OUTPUT)
 
 $(OUTPUT): $(ALLOBJ:%=$(BIN)/%)
 	@echo "linking $^ --> $@"
-	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
+	@$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 # --------------------------------------------------
 
