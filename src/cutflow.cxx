@@ -503,10 +503,6 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.veto_jets.size()) return; 
   counter["bad_jet_veto"] += weight; 
     
-  const size_t n_jets = 2; 
-  if (so.signal_jets.size() < n_jets) return; 
-  counter["n_jet"] += weight; 
-    
   if (so.met.Mod() < 150e3) return; 
   counter["met_150"] += weight; 
 
@@ -556,15 +552,12 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.met.Mod() / mass_eff < 0.25) return; 
   counter["met_eff"] += weight; 
 
-  double mass_ct = get_mctcorr(so.signal_jets.at(0), so.signal_jets.at(1), so.met); 
-  if (mass_ct < 150e3) return; 
-  counter["m_ct_150"] += weight; 
-  
   double mass_bb = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
   if (mass_bb < 200e3) return; 
   counter["m_bb"] += weight; 
 
-  double mass_ct = get_m_ct(so.signal_jets.at(0), so.signal_jets.at(1)); 
+  double mass_ct = get_mctcorr(so.signal_jets.at(0), 
+			       so.signal_jets.at(1), so.met); 
   if (mass_ct < 150e3) return; 
   counter["m_ct_150"] += weight; 
   
