@@ -5,6 +5,7 @@
 #include "ctag_defs.hh"		// for JFC_MEDIUM_* cuts
 #include "CtagCalibration.hh"
 #include "mctlib.h"
+#include "sbottom_functions.hh"
 
 #include "SUSYTools/SUSYObjDef.h"
 #include "TLorentzVector.h"
@@ -512,7 +513,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
 
-  std::vector<size_t> jet_indices
+  std::vector<size_t> jet_indices; 
   for (std::vector<IdLorentzVector>::const_iterator 
 	 itr = so.signal_jets.begin(); itr != so.signal_jets.end(); itr++) { 
     jet_indices.push_back(itr->index); 
