@@ -48,8 +48,6 @@ struct SelectionObjects
   bool is_data; 
   bool pass_grl; 
 
-  double mc_event_weight; 
-  double ctag_weight; 
 }; 
 
 // multiple object selections are called within the event loop
@@ -439,8 +437,8 @@ int main (int narg, const char* argv[]) {
   dump_counts(signal_counter, "signal region"); 
   dump_counts(signal_counter_mc_wt, "signal region evt wt"); 
   dump_counts(signal_counter_ctag_wt, "signal region tag wt"); 
-  dump_counts(el_cr_counter, "el control region"); 
-  dump_counts(mu_cr_counter, "mu control region"); 
+  // dump_counts(el_cr_counter, "el control region"); 
+  // dump_counts(mu_cr_counter, "mu control region"); 
 }
 
 // ----- common preselection runs before the other event wise selections
@@ -533,6 +531,10 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   double mass_eff = so.met.Mod() + scalar_sum_pt(so.signal_jets, 2); 
   if (so.met.Mod() / mass_eff < 0.25) return; 
   counter["met_eff"] += weight; 
+
+  double mass_ct = get_m_ct(so.signal_jets.at(0), so.signal_jets.at(1)); 
+  if (mass_ct < 150e3) return; 
+  counter["m_ct_150"] += weight; 
   
   double mass_bb = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
   if (mass_bb < 200e3) return; 
