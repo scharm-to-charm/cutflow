@@ -2,6 +2,8 @@
 
 simple cutflow for scharm to charm analysis
 
+## Important things
+
 ### what this is for
  
 This code was designed to do several things: 
@@ -31,6 +33,8 @@ The executable expects several extra files in the run directory (it's probably e
  - `grl.xml`: good runs list (only used with data)
  - `cdi.root`: b-tagging calibration file. For JetFitterCharm it should be `2013-Winter-rel17.2.1.4_MC12-83.root`
 
+## Less important things
+
 ### what are all these other files?
 
 Aside from the familiar `makefile` to build, and the `cutflow.cxx` file itself there are a few extra files kicking around: 
@@ -44,16 +48,19 @@ Aside from the familiar `makefile` to build, and the `cutflow.cxx` file itself t
 
 #### why a new TChain?
 
-Because `TChain` is stupid, why use this: 
+Because `TChain` is stupid. It forces you to do this: 
 ```cxx
 jet_something = 0; 
 chain->SetBranchStatus("jet_something", 1); 
 chain->SetBranchAddress("jet_something", &jet_something); 
 ```
-rather than this:
+when all you should have to do is this:
 ```cxx
 chain->SetBranch("jet_something", &jet_something); 
 ```
-? `SmartChain` will also:
+ `SmartChain` will also:
 - Throw exceptions when branches are missing
 - Throw exceptions when files are corrupted
+- Provide a method to dump all the set branch names (`std::vector<std::string> get_all_branch_names()`)
+
+
