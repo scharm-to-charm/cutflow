@@ -16,7 +16,9 @@ USE_HEADER="SUSYTools MissingETUtility egammaAnalysisUtils GoodRunsLists\
 
 if [[ $1 == '-l' ]]
 then
-    echo -n -L/data/atlas/atlasdata/kalderon/Sbottom-ST-00-03-13/RootCore/lib/x86_64-slc5-gcc43-opt" "
+    # hack to get this working on the oxford cluster
+    echo -n -L${ROOTCOREDIR}/lib/x86_64-slc5-gcc43-opt" "
+    echo -n -L${ROOTCOREDIR}/lib" "
     for l in $USE_LIBS
     do
 	echo -n -l${l}\ 
