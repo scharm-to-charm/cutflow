@@ -458,20 +458,23 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   if (!pass_vxp) return false; 
   counter["primary_vertex"] += weight; 
 
-  bool has_lar_error = (buffer.larError == 2); 
-  if(has_lar_error && so.is_data) return false; 
-  counter["lar_error"] += weight; 
+  if (so.veto_jets.size()) return false; 
+  counter["bad_jet_veto"] += weight; 
+
+  bool has_tile_trip = def->IsTileTrip(buffer.RunNumber, buffer.lbn, 
+               buffer.EventNumber); 
+  if (has_tile_trip) return false; 
+  counter["tile_trip"] += weight; 
 
   if (buffer.tileError == 2 && so.is_data) return false; 
   counter["tile_error"] += weight; 
+
+  bool has_lar_error = (buffer.larError == 2); 
+  if(has_lar_error && so.is_data) return false; 
+  counter["lar_error"] += weight; 
     
   if (buffer.coreFlags & 0x40000 && so.is_data) return false; 
   counter["core_flags"] += weight; 
-
-  bool has_tile_trip = def->IsTileTrip(buffer.RunNumber, buffer.lbn, 
-				       buffer.EventNumber); 
-  if (has_tile_trip) return false; 
-  counter["tile_trip"] += weight; 
   
   return true; 
 }
@@ -503,6 +506,10 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
     
   if (so.met.Mod() < 150e3) return; 
   counter["met_150"] += weight; 
+
+  const size_t n_jets = 2; 
+  if (so.signal_jets.size() < n_jets) return; 
+  counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
     
   if (so.signal_jets.at(0).Pt() < 130e3) return; 
   counter["leading_jet_130"] += weight; 
@@ -510,10 +517,14 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
 
+
   if (so.signal_jets.size() > 2) {
     if (so.signal_jets.at(2).Pt() > 50e3) return;
   }
   counter["third_jet_veto50"] += weight; 
+
+  //Need to add CHFcut: Chf check in SUSYTUtils; some pt track of jet divided by its pt
+  //If pt of jet > 100 
 
   bool medium_first = has_medium_tag(so.signal_jets.at(0).index, buffer); 
   bool medium_second = has_medium_tag(so.signal_jets.at(1).index, buffer); 
