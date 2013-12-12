@@ -471,6 +471,10 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   return true; 
 }
 
+// ===============================================
+// ========= eventwise signal selection ==========
+// ===============================================
+
 void signal_selection(const SelectionObjects& so, SUSYObjDef* def, 
 		      const SusyBuffer& buffer, CutCounter& counter, 
 		      double weight){

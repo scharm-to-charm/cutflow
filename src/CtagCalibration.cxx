@@ -71,8 +71,11 @@ CtagCalibration::CtagCalibration(std::string cdi_file, std::string env_file):
   m_cdi(0),
   m_jet_author("AntiKt4TopoLCJVF")
 {
-  // create the env file and add the root file to it
-  // (this is a terrible hack to get around the werid interface to the cdi)
+  // This is a terrible hack to get around the werid interface to the cdi:
+  // for some reason the CDI constructor wants an .env file, which 
+  // in turn points to the actual calibration file. I'm not sure how
+  // that is useful, so instead we create the env file and add the root
+  // file to it.			
   TEnv env(env_file.c_str()); 
   env.SetValue("File", cdi_file.c_str()); 
   int error = env.WriteFile(env_file.c_str()); 

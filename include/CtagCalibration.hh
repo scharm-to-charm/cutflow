@@ -44,13 +44,17 @@ JetTagSF& operator*=(JetTagSF&, const JetTagSF&);
 class CtagCalibration
 {
 public: 
-  CtagCalibration(std::string calibration_file, 
+  // For some reason the CDI wants an .env file, so we create one in /tmp/
+  // which points to the actual CDI file. Ugly for sure, if you use it with 
+  // a batch job you may want to randomize the env_file name to prevent
+  // overwrites. 
+  CtagCalibration(std::string cdi_file, 
 		  std::string env_file = "/tmp/btag.env"); 
   ~CtagCalibration(); 
   JetTagSF scale_factor(const JetTagFactorInputs& jet_tf_inputs) const; 
   bool pass(const JetTagFactorInputs& jet_tf_inputs) const; 
 private: 
-  // don't allow copying
+  // don't allow copying or assignment
   CtagCalibration(const CtagCalibration&){} 
   CtagCalibration& operator=(const CtagCalibration&); 
 
