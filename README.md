@@ -27,7 +27,7 @@ which will produce an executable called `cutflow`. Running
 
 will run the cutflow over these root files and print a summary. 
 
-The executable expects several extra files in the run directory: 
+The executable expects several extra files in the run directory (it's probably easiest to sotflink them to the appropriate files): 
 
  - `grl.xml`: good runs list (only used with data)
  - `cdi.root`: b-tagging calibration file. For JetFitterCharm it should be `2013-Winter-rel17.2.1.4_MC12-83.root`
