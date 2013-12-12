@@ -19,6 +19,7 @@ then
     # hack to get this working on the oxford cluster
     echo -n -L${ROOTCOREDIR}/lib/x86_64-slc5-gcc43-opt" "
     echo -n -L${ROOTCOREDIR}/lib" "
+    echo -n -Wl,-rpath,${ROOTCOREDIR}/lib" "
     for l in $USE_LIBS
     do
 	echo -n -l${l}\ 
