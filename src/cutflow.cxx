@@ -19,6 +19,11 @@
 
 #define xxx printf("line %i\n", __LINE__); 
 
+// ============= external files ============
+const std::string g_grl_file = "grl.xml"; 
+const std::string g_btag_file = "cdi.root"; 
+// =========================================
+
 // minimal class to keep track of particles
 class IdLorentzVector : public TLorentzVector
 {
@@ -102,18 +107,20 @@ int main (int narg, const char* argv[]) {
   printf("initalized\n"); 
   Root::TGRLCollection* grl = 0; 
   if (is_data) { 
-    std::string grl_name = "grl.xml"; 
+    std::string grl_name = g_grl_file; 
     if (!exists(grl_name)) throw std::runtime_error(grl_name + " not found");
-    Root::TGoodRunsListReader reader("grl.xml",true); 
+    Root::TGoodRunsListReader reader(grl_name.c_str(),true); 
     reader.Interpret(); 
     grl = new Root::TGRLCollection(reader.GetMergedGRLCollection()); 
   }
 
   CtagCalibration* ctag_cal = 0; 
-  try { 
-    ctag_cal = new CtagCalibration("cdi.root"); 
-  } catch (std::runtime_error& err) { 
-    printf(red("disabled tagging SF: %s\n").c_str(), err.what()); 
+  if (!is_data) { 
+    try { 
+      ctag_cal = new CtagCalibration(g_btag_file); 
+    } catch (std::runtime_error& err) { 
+      printf(red("disabled tagging SF: %s\n").c_str(), err.what()); 
+    }
   }
 
   CutCounter counter; 

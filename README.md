@@ -14,3 +14,20 @@ This code was designed to do several things:
 ### what this isn't for 
  
  This isn't a framework. It's not supposed to be used to fill histograms, create ntuples, optimize selections, lookup cross sections, or set limits. It's not supposed to have any dependencies that SUSYTools doesn't have. 
+
+### simple instructions
+
+If you have SUSYTools installed and `ROOTCOREDIR` is set, you should be able to type 
+
+    make 
+
+which will produce an executable called `cutflow`. Running 
+
+    ./cutflow root_file1.root root_file2.root ...
+
+will run the cutflow over these root files and print a summary. 
+
+The executable expects several extra files in the run directory: 
+
+ - `grl.xml`: good runs list (only used with data)
+ - `cdi.root`: b-tagging calibration file. For JetFitterCharm it should be `2013-Winter-rel17.2.1.4_MC12-83.root`
