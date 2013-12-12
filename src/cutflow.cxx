@@ -2,6 +2,7 @@
 #include "SmartChain.hh"
 #include "SusyBuffer.h"
 #include "CutCounter.hh"
+#include "CtagCalibration.hh"
 
 #include "SUSYTools/SUSYObjDef.h"
 #include "TLorentzVector.h"
@@ -14,6 +15,8 @@
 #include <vector> 
 #include <algorithm>
 #include <iostream> 
+
+#define xxx printf("line %i\n", __LINE__); 
 
 // minimal class to keep track of particles
 class IdLorentzVector : public TLorentzVector
@@ -38,7 +41,9 @@ struct SelectionObjects
   IdLorentzVector electron_jet; 
   bool is_data; 
   bool pass_grl; 
+
   double mc_event_weight; 
+  double ctag_weight; 
 }; 
 
 // multiple object selections are called within the event loop
@@ -62,10 +67,14 @@ bool has_higher_pt(const TLorentzVector& v1, const TLorentzVector& v2);
 double scalar_sum_pt(const std::vector<IdLorentzVector>& obj, size_t num); 
 // m_ct function 
 double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2); 
+// ctag sf function (wrapper for CtagCalibration)
+double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
+		   const CtagCalibration& ctag_cal); 
 
 // IO functions
 void dump_counts(const CutCounter&, std::string); 
 bool exists(std::string file_name); 
+std::string red(std::string); 
 
 template<typename M, typename A>
 A remove_overlaping(const M& mask, A altered, const float delta_r); 
@@ -99,9 +108,17 @@ int main (int narg, const char* argv[]) {
     grl = new Root::TGRLCollection(reader.GetMergedGRLCollection()); 
   }
 
+  CtagCalibration* ctag_cal = 0; 
+  try { 
+    ctag_cal = new CtagCalibration("cdi.root"); 
+  } catch (std::runtime_error& err) { 
+    printf(red("disabled tagging SF: %s\n").c_str(), err.what()); 
+  }
+
   CutCounter counter; 
   CutCounter signal_counter; 
   CutCounter signal_counter_mc_wt; 
+  CutCounter signal_counter_ctag_wt; 
   CutCounter el_cr_counter; 
   CutCounter mu_cr_counter; 
 
@@ -250,6 +267,7 @@ int main (int narg, const char* argv[]) {
     counter["preselected_el"] += preselected_el.size(); 
     counter["preselected_mu"] += preselected_mu.size(); 
 
+
     // ---- overlap removal ------
     std::vector<IdLorentzVector> after_overlap_jets = remove_overlaping(
       preselected_el, preselected_jets, 0.2); 
@@ -388,11 +406,21 @@ int main (int narg, const char* argv[]) {
     }
 
     // ---- event weights ----
+    double ctag_wt = 1; 
+    if (ctag_cal) {
+      if (so.signal_jets.size() > 0) { 
+	ctag_wt *= get_ctag_sf(so.signal_jets.at(0), buffer, *ctag_cal); 
+      }
+      if (so.signal_jets.size() > 1) { 
+	ctag_wt *= get_ctag_sf(so.signal_jets.at(1), buffer, *ctag_cal); 
+      }
+    }
 
     // ---- run the event-wise selections -----
     signal_selection(so, def, buffer, signal_counter); 
     signal_selection(so, def, buffer, signal_counter_mc_wt, 
 		     buffer.mcevt_weight->at(0).at(0)); 
+    signal_selection(so, def, buffer, signal_counter_ctag_wt, ctag_wt); 
     el_cr_selection(so, def, buffer, el_cr_counter); 
     mu_cr_selection(so, def, buffer, mu_cr_counter); 
 
@@ -402,6 +430,7 @@ int main (int narg, const char* argv[]) {
   dump_counts(counter, "objects"); 
   dump_counts(signal_counter, "signal region"); 
   dump_counts(signal_counter_mc_wt, "signal region evt wt"); 
+  dump_counts(signal_counter_ctag_wt, "signal region tag wt"); 
   dump_counts(el_cr_counter, "el control region"); 
   dump_counts(mu_cr_counter, "mu control region"); 
 }
@@ -462,7 +491,6 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.size() < n_jets) return; 
   counter["n_jet"] += weight; 
     
-    
   if (so.met.Mod() < 150e3) return; 
   counter["met_150"] += weight; 
     
@@ -482,7 +510,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   float min_dphi = 1000; 
   for (std::vector<IdLorentzVector>::const_iterator 
 	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets; 
-       itr+= weight) { 
+       itr++){
     float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
     min_dphi = std::min(deltaphi, min_dphi); 
   }
@@ -658,6 +686,29 @@ double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2) {
   return std::sqrt(mct2); 
 }
 
+// ================= reweighting functions ============
+void dump(const JetTagFactorInputs& inputs) { 
+  printf("pt %f, eta %f, anti_b %f, anti_u %f, flavor %i\n", 
+	 inputs.pt, inputs.eta, inputs.anti_b, inputs.anti_u, inputs.flavor);
+}
+
+double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
+		   const CtagCalibration& ctag_cal){ 
+  double pb = buffer.jet_flavor_component_jfitc_pb->at(jet.index); 
+  double pc = buffer.jet_flavor_component_jfitc_pc->at(jet.index); 
+  double pu = buffer.jet_flavor_component_jfitc_pu->at(jet.index); 
+  int ftl = buffer.jet_flavor_truth_label->at(jet.index); 
+  
+  JetTagFactorInputs inputs; 
+  inputs.pt = jet.Pt(); 
+  inputs.eta = jet.Eta(); 
+  inputs.anti_b = log(pc / pb); 
+  inputs.anti_u = log(pc / pu); 
+  inputs.flavor = get_flavor(ftl); 
+  // dump(inputs); 
+  return ctag_cal.scale_factor(inputs).nominal; 
+}
+
 
 // ================= IO functions ==================
 
@@ -684,4 +735,8 @@ bool exists(std::string file_name) {
   }
   file.close(); 
   return true; 
+}
+
+std::string red(std::string st) { 
+  return "\033[31;1m" + st + "\033[m"; 
 }
