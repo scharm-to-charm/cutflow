@@ -497,7 +497,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.veto_jets.size()) return; 
   counter["bad_jet_veto"] += weight; 
     
-  const size_t n_jets = 3; 
+  const size_t n_jets = 2; 
   if (so.signal_jets.size() < n_jets) return; 
   counter["n_jet"] += weight; 
     
@@ -509,6 +509,11 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
+
+  if (so.signal_jets.size() > 2) {
+    if (so.signal_jets.at(2).Pt() > 50e3) return;
+  }
+  counter["third_jet_veto50"] += weight; 
 
   bool medium_first = has_medium_tag(so.signal_jets.at(0).index, buffer); 
   bool medium_second = has_medium_tag(so.signal_jets.at(1).index, buffer); 
@@ -532,14 +537,14 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.met.Mod() / mass_eff < 0.25) return; 
   counter["met_eff"] += weight; 
 
-  double mass_ct = get_m_ct(so.signal_jets.at(0), so.signal_jets.at(1)); 
-  if (mass_ct < 150e3) return; 
-  counter["m_ct_150"] += weight; 
-  
   double mass_bb = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
   if (mass_bb < 200e3) return; 
   counter["m_bb"] += weight; 
 
+  double mass_ct = get_m_ct(so.signal_jets.at(0), so.signal_jets.at(1)); 
+  if (mass_ct < 150e3) return; 
+  counter["m_ct_150"] += weight; 
+  
 } // end of signal region cutflow
 
 void el_cr_selection(const SelectionObjects& so, SUSYObjDef* def, 
