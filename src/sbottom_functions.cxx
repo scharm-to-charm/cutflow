@@ -1,5 +1,5 @@
 #include <vector>
-#include "SUSYBuffer.h"
+#include "SusyBuffer.h"
 #include "sbottom_functions.hh"
 #include "SUSYTools/SUSYObjDef.h"
 
