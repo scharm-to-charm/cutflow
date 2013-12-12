@@ -3,7 +3,8 @@
 #include "sbottom_functions.hh"
 #include "SUSYTools/SUSYObjDef.h"
 
-bool ChfCheck(const std::vector<size_t>& jet_indices, const SusyBuffer &buf, SUSYObjDef &def)
+bool ChfCheck(const std::vector<size_t>& jet_indices, 
+	      const SusyBuffer &buf, SUSYObjDef &def)
 {
   size_t max=jet_indices.size();
   if(jet_indices.size()>=2) max=2;
