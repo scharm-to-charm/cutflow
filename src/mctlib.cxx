@@ -1,5 +1,6 @@
 #define mctlib_cxx
 #include <cmath>
+#include "mctlib.h"
 
 mctlib::mctlib()
 {}

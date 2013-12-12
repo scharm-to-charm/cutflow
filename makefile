@@ -57,6 +57,7 @@ DEPFLAGS    = -M -MP -MT $(BIN)/$*.o -MT $(DEP)/$*.d $(DEPINCLUDE) $(PY_FLAGS)
 TOBJ        := SusyBuffer.o 
 T_DICTS     := $(TOBJ:.o=Dict.o)
 GEN_OBJ     := SmartChain.o CutCounter.o CtagCalibration.o sbottom_functions.o
+GEN_OBJ     += sbottom_functions.o mctlib.o
 EXE_OBJ     := cutflow.o 
 
 ALLDEPOBJ   := $(TOBJ) $(EXE_OBJ) $(GEN_OBJ)

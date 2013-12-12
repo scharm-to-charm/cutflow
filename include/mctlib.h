@@ -1,3 +1,4 @@
+// -*- c++ -*-
 #ifndef mctlib_h
 #define mctlib_h
 
