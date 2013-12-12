@@ -4,6 +4,7 @@
 #include "CutCounter.hh"
 #include "ctag_defs.hh"		// for JFC_MEDIUM_* cuts
 #include "CtagCalibration.hh"
+#include "mctlib.h"
 
 #include "SUSYTools/SUSYObjDef.h"
 #include "TLorentzVector.h"
@@ -74,6 +75,7 @@ double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2);
 // ctag sf function (wrapper for CtagCalibration)
 double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
 		   const CtagCalibration& ctag_cal); 
+double get_mctcorr(const TLorentzVector& v1, const TLorentzVector& v2, const TVector2& vmet);
 
 // IO functions
 void dump_counts(const CutCounter&, std::string); 
@@ -535,7 +537,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.met.Mod() / mass_eff < 0.25) return; 
   counter["met_eff"] += weight; 
 
-  double mass_ct = get_m_ct(so.signal_jets.at(0), so.signal_jets.at(1)); 
+  double mass_ct = get_mctcorr(so.signal_jets.at(0), so.signal_jets.at(1), so.met); 
   if (mass_ct < 150e3) return; 
   counter["m_ct_150"] += weight; 
   
@@ -703,6 +705,17 @@ double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2) {
   TVector2 diff_pt = v1.Vect().XYvector() - v2.Vect().XYvector(); 
   double mct2 = std::pow(et1 + et2, 2) - std::pow(diff_pt.Mod(), 2); 
   return std::sqrt(mct2); 
+}
+
+double get_mctcorr(const TLorentzVector& tv1, const TLorentzVector& tv2, const TVector2& vmet)
+{
+  mctlib mct_object;
+  
+  double v1[4] = {tv1.E(), tv1.Px(), tv1.Py(), tv1.Pz()};
+  double v2[4] = {tv2.E(), tv2.Px(), tv2.Py(), tv2.Pz()};
+  double vds[4] = {0.0, 0.0, 0.0, 0.0};
+  double ptm[2] = {vmet.X(), vmet.Y()};
+  return mct_object.mctcorr(v1, v2, vds, ptm, 8000000.0, 0.0);
 }
 
 // ================= reweighting functions ============
