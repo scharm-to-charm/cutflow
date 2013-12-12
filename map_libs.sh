@@ -16,9 +16,10 @@ USE_HEADER="SUSYTools MissingETUtility egammaAnalysisUtils GoodRunsLists\
 
 if [[ $1 == '-l' ]]
 then
+    echo -n -L/data/atlas/atlasdata/kalderon/Sbottom-ST-00-03-13/RootCore/lib/x86_64-slc5-gcc43-opt" "
     for l in $USE_LIBS
     do
-	echo -n -L$2/${l}/StandAlone -Wl,-rpath,$2/${l}/StandAlone -l${l}\ 
+	echo -n -l${l}\ 
     done
 elif [[ $1 == '-i' ]]
 then
