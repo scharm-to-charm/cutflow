@@ -499,9 +499,6 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 
   if (so.veto_muons.size()) return; 
   counter["muon_veto"] += weight; 
-
-  if (so.veto_jets.size()) return; 
-  counter["bad_jet_veto"] += weight; 
     
   if (so.met.Mod() < 150e3) return; 
   counter["met_150"] += weight; 
