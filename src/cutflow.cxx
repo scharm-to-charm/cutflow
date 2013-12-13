@@ -296,21 +296,21 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator 
 	   itr = after_overlap_el.begin(); 
 	 itr != after_overlap_el.end(); itr++) { 
-      float rel_isolation = (
-	buffer.el_ptcone20->at(itr->index) / itr->Pt()); 
-      bool isolated_el = rel_isolation < 0.1; 
-      if (isolated_el) {
-	so.veto_electrons.push_back(*itr); 
-      }
+      //float rel_isolation = (
+      //buffer.el_ptcone20->at(itr->index) / itr->Pt()); 
+      //bool isolated_el = rel_isolation < 0.1; 
+      //if (isolated_el) {
+      so.veto_electrons.push_back(*itr); 
+      //}
     }
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = after_overlap_mu.begin(); 
 	 itr != after_overlap_mu.end(); itr++) { 
-      float isolation = buffer.mu_staco_ptcone20->at(itr->index); 
-      bool isolated_mu = isolation < 1.8e3; 
-      if (isolated_mu) { 
-	so.veto_muons.push_back(*itr); 
-      }
+      //float isolation = buffer.mu_staco_ptcone20->at(itr->index); 
+      //bool isolated_mu = isolation < 1.8e3; 
+      //if (isolated_mu) { 
+      so.veto_muons.push_back(*itr); 
+      //}
     }
     counter["veto_jets"] += so.veto_jets.size(); 
     counter["veto_electrons"] += so.veto_electrons.size(); 
@@ -321,10 +321,10 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = good_jets.begin(); 
 	 itr != good_jets.end(); itr++) { 
-      bool signal_pt = itr->Pt() > 30e3; 
-      bool tag_eta = std::abs(itr->Eta()) < 2.5; 
+      bool signal_pt = itr->Pt() > 30e3; // was 30, for mindphi(jet-MET)
+      bool tag_eta = std::abs(itr->Eta()) < 2.8; // was 2.5. Don't care about tagging this, just veto if pT>50.  
       float jet_jvf = buffer.jet_jvtxf->at(itr->index); 
-      bool ok_jvf = (jet_jvf > 0.5) || (itr->Pt() > 50e3); 
+      bool ok_jvf = ( (jet_jvf > 0.5) || (itr->Pt() > 50e3) || (itr->Eta() > 2.4) ); // this is what I meant about JVF eta outside tracker
       if (signal_pt && tag_eta && ok_jvf) { 
 	so.signal_jets.push_back(*itr); 
       }
@@ -499,6 +499,15 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 
   if (so.veto_muons.size()) return; 
   counter["muon_veto"] += weight; 
+
+  std::vector<size_t> jet_indices; 
+  for (std::vector<IdLorentzVector>::const_iterator 
+	 itr = so.signal_jets.begin(); itr != so.signal_jets.end(); itr++) { 
+    jet_indices.push_back(itr->index); 
+  }
+  bool clean_for_chf = ChfCheck(jet_indices, buffer, *def); 
+  if (clean_for_chf) return; 
+  counter["pass_chf"] += weight; 
     
   if (so.met.Mod() < 150e3) return; 
   counter["met_150"] += weight; 
@@ -506,7 +515,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   const size_t n_jets = 2; 
   if (so.signal_jets.size() < n_jets) return; 
   counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
-    
+  
   if (so.signal_jets.at(0).Pt() < 130e3) return; 
   counter["leading_jet_130"] += weight; 
 
@@ -518,28 +527,18 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   }
   counter["third_jet_veto50"] += weight; 
 
-  std::vector<size_t> jet_indices; 
-  for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr != so.signal_jets.end(); itr++) { 
-    jet_indices.push_back(itr->index); 
-  }
-  bool clean_for_chf = ChfCheck(jet_indices, buffer, *def); 
-  if (clean_for_chf) return; 
-  counter["pass_chf"] += weight; 
-
-  bool medium_first = has_medium_tag(so.signal_jets.at(0).index, buffer); 
-  bool medium_second = has_medium_tag(so.signal_jets.at(1).index, buffer); 
-  if (! (medium_first && medium_second) ) return; 
-  counter["two_ctag"] += weight; 
-
   TLorentzVector met_4vec; 
   met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
   float min_dphi = 1000; 
   for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets; 
+	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
        itr++){
     float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
     min_dphi = std::min(deltaphi, min_dphi); 
+  }
+  if (so.signal_jets.size() > 2) {
+    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
+    min_dphi = std::min(deltaphi, min_dphi);
   }
 
   if (min_dphi < 0.4) return; 
@@ -549,14 +548,28 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.met.Mod() / mass_eff < 0.25) return; 
   counter["met_eff"] += weight; 
 
-  double mass_bb = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
-  if (mass_bb < 200e3) return; 
-  counter["m_bb"] += weight; 
+  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
+  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+
+  if (! (medium_first || medium_second) ) return; 
+  counter["at_least_one_ctag"] += weight; 
+  if (! (medium_first && medium_second) ) return; 
+  counter["two_ctag"] += weight; 
+
 
   double mass_ct = get_mctcorr(so.signal_jets.at(0), 
 			       so.signal_jets.at(1), so.met); 
   if (mass_ct < 150e3) return; 
   counter["m_ct_150"] += weight; 
+
+
+  double mass_cc = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
+
+  //cout<<mass_ct<<"\t"<<mass_cc<<endl;
+
+  if (mass_cc < 200e3) return; 
+  counter["m_cc"] += weight; 
+
   
 } // end of signal region cutflow
 
@@ -694,7 +707,7 @@ bool has_medium_tag(int jet_index, const SusyBuffer& buffer) {
 
   // medium tag values are defined in ctag_defs.hh
   if (log(pc / pu) < JFC_MEDIUM_ANTI_U_CUT) return false; 
-  if (log(pb / pu) < JFC_MEDIUM_ANTI_B_CUT) return false; 
+  if (log(pc / pb) < JFC_MEDIUM_ANTI_B_CUT) return false; 
   return true; 
 }
 
