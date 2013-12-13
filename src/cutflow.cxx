@@ -65,6 +65,9 @@ void mu_cr_selection(const SelectionObjects&, SUSYObjDef* def,
 std::vector<IdLorentzVector> filter_pass(const std::vector<IdLorentzVector>&); 
 std::vector<IdLorentzVector> filter_fail(const std::vector<IdLorentzVector>&); 
 
+// function to get indices (functions inherited from sbottom want them)
+std::vector<size_t> get_indices(const std::vector<IdLorentzVector>&); 
+
 // check for c-tags
 bool has_medium_tag(int jet_index, const SusyBuffer& buffer); 
 // for sorting
@@ -73,10 +76,11 @@ bool has_higher_pt(const TLorentzVector& v1, const TLorentzVector& v2);
 double scalar_sum_pt(const std::vector<IdLorentzVector>& obj, size_t num); 
 // m_ct function 
 double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2); 
+double get_mctcorr(const TLorentzVector& v1, const TLorentzVector& v2, 
+		   const TVector2& vmet);
 // ctag sf function (wrapper for CtagCalibration)
 double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
 		   const CtagCalibration& ctag_cal); 
-double get_mctcorr(const TLorentzVector& v1, const TLorentzVector& v2, const TVector2& vmet);
 
 // IO functions
 void dump_counts(const CutCounter&, std::string); 
@@ -500,12 +504,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.veto_muons.size()) return; 
   counter["muon_veto"] += weight; 
 
-  std::vector<size_t> jet_indices; 
-  for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr != so.signal_jets.end(); itr++) { 
-    jet_indices.push_back(itr->index); 
-  }
-  bool clean_for_chf = ChfCheck(jet_indices, buffer, *def); 
+  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
   if (clean_for_chf) return; 
   counter["pass_chf"] += weight; 
     
@@ -742,6 +741,15 @@ double get_mctcorr(const TLorentzVector& tv1, const TLorentzVector& tv2, const T
   double vds[4] = {0.0, 0.0, 0.0, 0.0};
   double ptm[2] = {vmet.X(), vmet.Y()};
   return mct_object.mctcorr(v1, v2, vds, ptm, 8000000.0, 0.0);
+}
+
+std::vector<size_t> get_indices(const std::vector<IdLorentzVector>& vecs) { 
+  std::vector<size_t> indices; 
+  for (std::vector<IdLorentzVector>::const_iterator itr = vecs.begin(); 
+       itr != vecs.end(); itr++) { 
+    indices.push_back(itr->index); 
+  }
+  return indices; 
 }
 
 // ================= reweighting functions ============
