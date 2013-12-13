@@ -321,7 +321,7 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = good_jets.begin(); 
 	 itr != good_jets.end(); itr++) { 
-      bool signal_pt = itr->Pt() > 30e3; // was 30, for mindphi(jet-MET)
+      bool signal_pt = itr->Pt() > 20e3; // was 30, for mindphi(jet-MET)
       bool tag_eta = std::abs(itr->Eta()) < 2.8; // was 2.5. Don't care about tagging this, just veto if pT>50.  
       float jet_jvf = buffer.jet_jvtxf->at(itr->index); 
       bool ok_jvf = ( (jet_jvf > 0.5) || (itr->Pt() > 50e3) || (itr->Eta() > 2.4) ); // this is what I meant about JVF eta outside tracker
