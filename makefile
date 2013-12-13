@@ -10,7 +10,7 @@ DICT         := dict
 
 
 ifndef ROOTCOREDIR
-$(error "couldn't find ROOTCOREDIR")
+  $(error "couldn't find ROOTCOREDIR")
 endif
 ROOTCORE_ROOT := $(ROOTCOREDIR)/..
 SUSYTOOLS_INC      := $(shell ./map_libs.sh -i $(ROOTCORE_ROOT))
@@ -35,7 +35,10 @@ ROOTLIBS      += -lEG           #for TParticle
 
 # --- set compiler and flags (roll c options and include paths together)
 CXXFLAGS     := -O2 -Wall -fPIC -I$(INC) $(SUSYTOOLS_INC:%=-I%) -g 
-# LDFLAGS      := -Wl,-no-undefined
+COMPILER_NAME := $(notdir ${CXX})
+ifeq ($(COMPILER_NAME), g++)
+  LDFLAGS      := -Wl,-no-undefined
+endif
 LIBS         := $(shell ./map_libs.sh -l $(ROOTCORE_ROOT))
 
 # rootstuff 
