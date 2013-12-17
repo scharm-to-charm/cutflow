@@ -491,8 +491,8 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   if (!so.pass_grl) return false; 
   counter["grl"] += weight; 
 
-  if (!buffer.trigger) return false; 
-  counter["trigger"] += weight; 
+  if (!buffer.xe80_tclcw_tight) return false; 
+  counter["xe80_tclcw_tight"] += weight; 
 
   bool pass_vxp = def->IsGoodVertex(buffer.vx_nTracks); 
   if (!pass_vxp) return false; 
