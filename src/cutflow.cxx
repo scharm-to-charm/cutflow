@@ -24,6 +24,10 @@
 // ============= external files ============
 const std::string g_grl_file = "grl.xml"; 
 const std::string g_btag_file = "cdi.root"; 
+// ================= output ================
+// list of set branches (set to "" for std::cout)
+// const std::string g_set_branches = "set_branches.txt"; 
+const std::string g_set_branches = "/dev/null"; 
 // =========================================
 
 // minimal class to keep track of particles
@@ -92,6 +96,8 @@ bool has_bad_tile(const std::vector<IdLorentzVector>& jets,
 void dump_counts(const CutCounter&, std::string); 
 bool exists(std::string file_name); 
 std::string red(std::string); 
+void dump_branches(const std::vector<std::string>& branch_names, 
+		   const std::string file_name = ""); 
 
 template<typename M, typename A>
 A remove_overlaping(const M& mask, A altered, const float delta_r); 
@@ -101,6 +107,7 @@ A remove_overlaping(const M& mask, A altered, const float delta_r);
 // =================================================================
 
 int main (int narg, const char* argv[]) { 
+  if (narg == 1) throw std::runtime_error("no files given"); 
 
   SmartChain* chain = new SmartChain("susy"); 
   for (int iii = 1; iii < narg; iii++) { 
@@ -479,6 +486,7 @@ int main (int narg, const char* argv[]) {
   dump_counts(signal_counter_ctag_wt, "signal region tag wt"); 
   // dump_counts(el_cr_counter, "el control region"); 
   // dump_counts(mu_cr_counter, "mu control region"); 
+  dump_branches(chain->get_all_branch_names(), g_set_branches); 
 }
 
 // ----- common preselection runs before the other event wise selections
@@ -862,4 +870,21 @@ bool exists(std::string file_name) {
 
 std::string red(std::string st) { 
   return "\033[31;1m" + st + "\033[m"; 
+}
+
+void dump_branches(const std::vector<std::string>& branch_names, 
+		   const std::string file_name) { 
+  std::ofstream out; 
+  if (file_name.size()) { 
+    out.open(file_name.c_str(), std::ofstream::trunc); 
+  } else { 
+    std::cout << "======= all set branches ======\n"; 
+  }
+  for (std::vector<std::string>::const_iterator itr = branch_names.begin(); 
+       itr != branch_names.end(); itr++) { 
+    out << *itr << std::endl; 
+    if (file_name.size() == 0) { 
+      std::cout << *itr << std::endl;
+    }
+  }
 }
