@@ -126,6 +126,11 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("mu_staco_nSCTDeadSensors", &mu_staco_nSCTDeadSensors); 
   fChain->SetBranch("mu_staco_energyLossPar", &mu_staco_energyLossPar); 
 
+  fChain->SetBranch("mu_staco_qoverp_exPV", &mu_staco_qoverp_exPV); 
+  fChain->SetBranch("mu_staco_cov_qoverp_exPV", &mu_staco_cov_qoverp_exPV);
+  fChain->SetBranch("mu_staco_z0_exPV", &mu_staco_z0_exPV); 
+  fChain->SetBranch("mu_staco_d0_exPV", &mu_staco_d0_exPV); 
+
   fChain->SetBranch(jc + "_n", &jet_n); 
   fChain->SetBranch(jc + "_pt", &jet_pt); 
   fChain->SetBranch(jc + "_eta", &jet_eta); 
@@ -139,6 +144,7 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch(jc + "_ActiveAreaPy",   &jet_ActiveAreaPy); 
   fChain->SetBranch(jc + "_ActiveAreaPz",   &jet_ActiveAreaPz); 
   fChain->SetBranch(jc + "_ActiveAreaE",   &jet_ActiveAreaE); 
+  fChain->SetBranch(jc + "_BCH_CORR_JET",  &jet_BCH_CORR_JET); 
   fChain->SetBranch(jc + "_emfrac", &jet_emfrac); 
   fChain->SetBranch(jc + "_hecf", &jet_hecf); 
   fChain->SetBranch(jc + "_LArQuality", &jet_LArQuality); 
@@ -200,12 +206,13 @@ void SusyBuffer::set_mc_branches(SmartChain* chain,
 
   // we can't use the mc_event_weight with sherpa tag 
   chain->SetBranch("mcevt_weight", &mcevt_weight); 
+
+  // ACHTUNG: I thought these were needed for the boson pt filter
   //chain->SetBranch("mc_n", &mc_n); 
   //chain->SetBranch("mc_pt", &mc_pt); 
   //chain->SetBranch("mc_eta", &mc_eta); 
   //chain->SetBranch("mc_phi", &mc_phi); 
   //chain->SetBranch("mc_m", &mc_m); 
-
   //chain->SetBranch("mc_status", &mc_status); 
   //chain->SetBranch("mc_pdgId", &mc_pdgId); 
 

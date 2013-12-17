@@ -48,8 +48,11 @@ struct SelectionObjects
   TVector2 mu_met; 
   IdLorentzVector electron_jet; 
   bool is_data; 
-  bool pass_grl; 
 
+  bool pass_grl; 
+  bool has_cosmic_muon; 
+  bool has_bad_muon; 
+  bool has_bad_tile; 
 }; 
 
 // multiple object selections are called within the event loop
@@ -81,6 +84,9 @@ double get_mctcorr(const TLorentzVector& v1, const TLorentzVector& v2,
 // ctag sf function (wrapper for CtagCalibration)
 double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
 		   const CtagCalibration& ctag_cal); 
+// bad tile veto 
+bool has_bad_tile(const std::vector<IdLorentzVector>& jets, 
+		  const TVector2& met, const SusyBuffer& buffer); 
 
 // IO functions
 void dump_counts(const CutCounter&, std::string); 
@@ -280,7 +286,6 @@ int main (int narg, const char* argv[]) {
     counter["preselected_el"] += preselected_el.size(); 
     counter["preselected_mu"] += preselected_mu.size(); 
 
-
     // ---- overlap removal ------
     std::vector<IdLorentzVector> after_overlap_jets = remove_overlaping(
       preselected_el, preselected_jets, 0.2); 
@@ -418,6 +423,34 @@ int main (int narg, const char* argv[]) {
       so.pass_grl = true; 
     }
 
+    // --- muon quality cuts ---
+    so.has_cosmic_muon = false; 
+    for (std::vector<IdLorentzVector>::const_iterator 
+	   itr = after_overlap_mu.begin(); 
+	 itr != after_overlap_mu.end(); itr++){ 
+      float mu_z0_exPV = buffer.mu_staco_z0_exPV->at(itr->index); 
+      float mu_d0_exPV = buffer.mu_staco_d0_exPV->at(itr->index); 
+      if (def->IsCosmicMuon(mu_z0_exPV, mu_d0_exPV)) { 
+	so.has_cosmic_muon = true; 
+	break; 
+      }
+    }
+    
+    so.has_bad_muon = false; 
+    for (std::vector<IdLorentzVector>::const_iterator 
+	   itr = preselected_mu.begin(); 
+	 itr != preselected_mu.end(); itr++){ 
+      float mu_qoverp = buffer.mu_staco_qoverp_exPV->at(itr->index); 
+      float mu_cov_qoverp = buffer.mu_staco_cov_qoverp_exPV->at(itr->index); 
+      if (def->IsBadMuon(mu_qoverp, mu_cov_qoverp)) { 
+	so.has_bad_muon = true; 
+	break; 
+      }
+    }
+    
+    // ---- bad tile cut ----
+    so.has_bad_tile = has_bad_tile(preselected_jets, so.met, buffer); 
+
     // ---- event weights ----
     double ctag_wt = 1; 
     if (ctag_cal) {
@@ -476,12 +509,21 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   if (buffer.tileError == 2 && so.is_data) return false; 
   counter["tile_error"] += weight; 
 
+  if (so.has_bad_tile) return false; 
+  counter["bad_tile_veto"] += weight; 
+
   bool has_lar_error = (buffer.larError == 2); 
   if(has_lar_error && so.is_data) return false; 
   counter["lar_error"] += weight; 
     
   if (buffer.coreFlags & 0x40000 && so.is_data) return false; 
   counter["core_flags"] += weight; 
+
+  if (so.has_cosmic_muon) return false; 
+  counter["cosmic_muon_veto"] += weight; 
+
+  if (so.has_bad_muon) return false; 
+  counter["bad_muon_veto"] += weight; 
   
   return true; 
 }
@@ -773,6 +815,21 @@ double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer,
   inputs.flavor = get_flavor(ftl); 
   // dump(inputs); 
   return ctag_cal.scale_factor(inputs).nominal; 
+}
+
+// ================= object / event quality ===========
+bool has_bad_tile(const std::vector<IdLorentzVector>& jets, 
+		  const TVector2& met, 
+		  const SusyBuffer& buffer) { 
+  for (std::vector<IdLorentzVector>::const_iterator itr = jets.begin(); 
+       itr != jets.end(); itr++) { 
+    float BCH_CORR_JET = buffer.jet_BCH_CORR_JET->at(itr->index); 
+    float dphi = met.DeltaPhi(itr->Vect().XYvector()); 
+    if (itr->Pt() > 40e3 && BCH_CORR_JET > 0.05 && dphi < 0.3) { 
+      return true; 
+    }
+  }
+  return false; 
 }
 
 

@@ -30,7 +30,7 @@ public :
   int hfor_type; 
   int spart1_pdgid; 
   int spart2_pdgid; 
-  float mc_event_weight; 
+  // float mc_event_weight; 
 
   // hack for sherpa bug
   std::vector<std::vector<double> >* mcevt_weight; 
@@ -72,8 +72,8 @@ public :
   float MET_Egamma10NoTau_RefGamma_ety;
   float MET_Egamma10NoTau_RefGamma_sumet;
 
-  float MET_RefFinal_etx; 
-  float MET_RefFinal_ety; 
+  // float MET_RefFinal_etx; 
+  // float MET_RefFinal_ety; 
   
   std::vector<float>   *jet_jvtxf; 
   int             el_n;
@@ -85,13 +85,13 @@ public :
   std::vector<int>     *el_mediumPP;
   std::vector<int>     *el_tightPP;
   std::vector<float>     *el_ptcone20;
-  std::vector<float>     *el_trackd0pv;
-  std::vector<float>     *el_trackz0pv;
+  // std::vector<float>     *el_trackd0pv;
+  // std::vector<float>     *el_trackz0pv;
   std::vector<float>     *el_charge;
   std::vector<float>   *el_cl_E;
   std::vector<float>   *el_cl_eta;
   std::vector<float>   *el_cl_phi;
-  std::vector<float>   *el_cl_pt;
+  // std::vector<float>   *el_cl_pt;
   std::vector<float>   *el_trackphi;
   std::vector<float>   *el_tracketa;
   std::vector<int>     *el_nPixHits;
@@ -123,6 +123,12 @@ public :
   std::vector<int>     *mu_staco_nSCTDeadSensors;
   std::vector<float>   *mu_staco_energyLossPar; 
 
+  // muon quality cuts
+  std::vector<float>   *mu_staco_qoverp_exPV; 
+  std::vector<float>   *mu_staco_cov_qoverp_exPV; 
+  std::vector<float>   *mu_staco_d0_exPV; 
+  std::vector<float>   *mu_staco_z0_exPV; 
+
   // Jet Stuff
   int           jet_n;
   std::vector<float>   *jet_pt;
@@ -137,6 +143,7 @@ public :
   std::vector<float>   *jet_ActiveAreaPy; 
   std::vector<float>   *jet_ActiveAreaPz; 
   std::vector<float>   *jet_ActiveAreaE; 
+  std::vector<float>   *jet_BCH_CORR_JET; 
   // Event Shape is defined above
   std::vector<float>   *jet_emfrac;
   std::vector<float>   *jet_hecf;
@@ -171,7 +178,7 @@ public :
   std::vector<float>* trk_chi2; 
   std::vector<int>* trk_nPixHits; 
   std::vector<int>* trk_nSCTHits; 
-  std::vector<float>* trk_cone40_ptmin3gev_hitschi_nTrackIso; 
+  // std::vector<float>* trk_cone40_ptmin3gev_hitschi_nTrackIso; 
 
   SusyBuffer(SmartChain *tree); 
   bool is_data() const; 
