@@ -540,11 +540,11 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
 
-  if (so.veto_electrons.size()) return; 
-  counter["electron_veto"] += weight; 
-
   if (so.veto_muons.size()) return; 
   counter["muon_veto"] += weight; 
+
+  if (so.veto_electrons.size()) return; 
+  counter["electron_veto"] += weight; 
 
   bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
   if (clean_for_chf) return; 
@@ -825,7 +825,7 @@ bool has_bad_tile(const std::vector<IdLorentzVector>& jets,
        itr != jets.end(); itr++) { 
     float BCH_CORR_JET = buffer.jet_BCH_CORR_JET->at(itr->index); 
     float dphi = met.DeltaPhi(itr->Vect().XYvector()); 
-    if (itr->Pt() > 40e3 && BCH_CORR_JET > 0.05 && dphi < 0.3) { 
+    if (itr->Pt() > 40e3 && BCH_CORR_JET > 0.05 && abs(dphi) < 0.3) { 
       return true; 
     }
   }
