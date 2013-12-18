@@ -74,16 +74,12 @@ public :
   float MET_Egamma10NoTau_RefGamma_ety;
   float MET_Egamma10NoTau_RefGamma_sumet;
 
-  // float MET_RefFinal_etx; 
-  // float MET_RefFinal_ety; 
-  
   std::vector<float>   *jet_jvtxf; 
   int             el_n;
   std::vector<float>   *el_eta; 
   std::vector<float>   *el_phi; 
   std::vector<int>     *el_author;
   std::vector<unsigned int> *el_OQ;
-  // vector<unsigned int> *el_OQRecalc;
   std::vector<int>     *el_mediumPP;
   std::vector<int>     *el_tightPP;
   std::vector<float>     *el_ptcone20;
@@ -93,7 +89,6 @@ public :
   std::vector<float>   *el_cl_E;
   std::vector<float>   *el_cl_eta;
   std::vector<float>   *el_cl_phi;
-  // std::vector<float>   *el_cl_pt;
   std::vector<float>   *el_trackphi;
   std::vector<float>   *el_tracketa;
   std::vector<int>     *el_nPixHits;
@@ -180,7 +175,6 @@ public :
   std::vector<float>* trk_chi2; 
   std::vector<int>* trk_nPixHits; 
   std::vector<int>* trk_nSCTHits; 
-  // std::vector<float>* trk_cone40_ptmin3gev_hitschi_nTrackIso; 
 
   SusyBuffer(SmartChain *tree); 
   bool is_data() const; 

@@ -4,7 +4,7 @@
 #include "CutCounter.hh"
 #include "ctag_defs.hh"		// for JFC_MEDIUM_* cuts
 #include "CtagCalibration.hh"
-#include "mctlib.h"
+#include "mctlib.hh"
 #include "sbottom_functions.hh"
 
 #include "SUSYTools/SUSYObjDef.h"
@@ -611,14 +611,9 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (mass_ct < 150e3) return; 
   counter["m_ct_150"] += weight; 
 
-
   double mass_cc = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
-
-  //cout<<mass_ct<<"\t"<<mass_cc<<endl;
-
   if (mass_cc < 200e3) return; 
   counter["m_cc"] += weight; 
-
   
 } // end of signal region cutflow
 
@@ -782,7 +777,8 @@ double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2) {
   return std::sqrt(mct2); 
 }
 
-double get_mctcorr(const TLorentzVector& tv1, const TLorentzVector& tv2, const TVector2& vmet)
+double get_mctcorr(const TLorentzVector& tv1, const TLorentzVector& tv2, 
+		   const TVector2& vmet)
 {
   mctlib mct_object;
   
@@ -790,7 +786,7 @@ double get_mctcorr(const TLorentzVector& tv1, const TLorentzVector& tv2, const T
   double v2[4] = {tv2.E(), tv2.Px(), tv2.Py(), tv2.Pz()};
   double vds[4] = {0.0, 0.0, 0.0, 0.0};
   double ptm[2] = {vmet.X(), vmet.Y()};
-  return mct_object.mctcorr(v1, v2, vds, ptm, 8000000.0, 0.0);
+  return mct_object.mctcorr(v1, v2, vds, ptm, 8e6, 0.0);
 }
 
 std::vector<size_t> get_indices(const std::vector<IdLorentzVector>& vecs) { 

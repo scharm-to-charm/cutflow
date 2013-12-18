@@ -78,9 +78,6 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("MET_Egamma10NoTau_RefGamma_sumet",
 		    &MET_Egamma10NoTau_RefGamma_sumet);
 
-  //fChain->SetBranch("MET_RefFinal_etx", &MET_RefFinal_etx); 
-  //fChain->SetBranch("MET_RefFinal_ety", &MET_RefFinal_ety); 
-
  
   fChain->SetBranch("el_n", &el_n); 
   fChain->SetBranch("el_eta", &el_eta); 
@@ -96,7 +93,6 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("el_cl_E", &el_cl_E); 
   fChain->SetBranch("el_cl_eta", &el_cl_eta); 
   fChain->SetBranch("el_cl_phi", &el_cl_phi); 
-  //fChain->SetBranch("el_cl_pt", &el_cl_pt); 
   fChain->SetBranch("el_trackphi", &el_trackphi); 
   fChain->SetBranch("el_tracketa", &el_tracketa); 
   fChain->SetBranch("el_nPixHits", &el_nPixHits); 
@@ -190,8 +186,6 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("trk_chi2", &trk_chi2); 
   fChain->SetBranch("trk_nPixHits", &trk_nPixHits); 
   fChain->SetBranch("trk_nSCTHits", &trk_nSCTHits); 
-  //fChain->SetBranch("trk_cone40_ptmin3gev_hitschi_nTrackIso", 
-  //&trk_cone40_ptmin3gev_hitschi_nTrackIso); 
 
 }
 
