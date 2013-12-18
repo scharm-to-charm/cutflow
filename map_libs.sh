@@ -16,10 +16,9 @@ USE_HEADER="SUSYTools MissingETUtility egammaAnalysisUtils GoodRunsLists\
 
 if [[ $1 == '-l' ]]
 then
-    # hack to get this working on the oxford cluster
-    echo -n -L${ROOTCOREDIR}/lib/x86_64-slc5-gcc43-opt" "
-    echo -n -L${ROOTCOREDIR}/lib" "
-    echo -n -Wl,-rpath,${ROOTCOREDIR}/lib" "
+    lib_path=${ROOTCOREDIR}/lib/${ROOTCOREARCH#/}
+    echo -n -L${lib_path%/}" "
+    echo -n -Wl,-rpath,${lib_path%/}" "
     for l in $USE_LIBS
     do
 	echo -n -l${l}\ 
@@ -28,7 +27,7 @@ elif [[ $1 == '-i' ]]
 then
     for i in $USE_HEADER
     do 
-	echo -n $2/$i\ 
+	echo -n ${ROOTCOREDIR}/../$i\ 
     done
 else 
     echo "ERROR: $0 needs flag -i or -l" >&2 

@@ -7,13 +7,13 @@ BIN          := bin
 SRC          := src
 INC          := include
 DICT         := dict
+DEP          := $(BIN)
 
 
 ifndef ROOTCOREDIR
   $(error "couldn't find ROOTCOREDIR")
 endif
-ROOTCORE_ROOT := $(ROOTCOREDIR)/..
-SUSYTOOLS_INC      := $(shell ./map_libs.sh -i $(ROOTCORE_ROOT))
+SUSYTOOLS_INC      := $(shell ./map_libs.sh -i )
 
 #  set search path
 vpath %.o    $(BIN)
@@ -39,7 +39,7 @@ COMPILER_NAME := $(notdir ${CXX})
 ifeq ($(COMPILER_NAME), g++)
   LDFLAGS      := -Wl,-no-undefined
 endif
-LIBS         := $(shell ./map_libs.sh -l $(ROOTCORE_ROOT))
+LIBS         := $(shell ./map_libs.sh -l )
 
 # rootstuff 
 CXXFLAGS     += $(ROOTCFLAGS)
@@ -52,7 +52,6 @@ PY_LDFLAGS += $(PY_LIB)
 PY_LDFLAGS += -shared
 
 # dependency flags
-DEP        := $(BIN)
 DEPINCLUDE := -I$(INC) $(SUSYTOOLS_INC:%=-I%) -I$(shell root-config --incdir)
 DEPFLAGS    = -M -MP -MT $(BIN)/$*.o -MT $(DEP)/$*.d $(DEPINCLUDE) $(PY_FLAGS)
 
@@ -90,22 +89,22 @@ $(BIN)/%Dict.o: $(DICT)/%Dict.cxx
 	@$(CXX) $(CXXFLAGS) $(ROOTCFLAGS) -c $< -o $@
 
 # compile rule
-$(DEP)/%.o: %.cxx
+$(BIN)/%.o: %.cxx
 	@echo compiling $<
-	@mkdir -p $(DEP)
+	@mkdir -p $(BIN)
 	@$(CXX) -c $(CXXFLAGS) $< -o $@
 
 # use auto dependency generation
 
 ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),rmdep)
-include  $(ALLDEPOBJ:%.o=$(DEP)/%.d)
-endif
+  ifneq ($(MAKECMDGOALS),rmdep)
+    include $(ALLDEPOBJ:%.o=$(DEP)/%.d)
+  endif
 endif
 
-$(BIN)/%.d: %.cxx
+$(DEP)/%.d: %.cxx
 	@echo making dependencies for $<
-	@mkdir -p $(BIN)
+	@mkdir -p $(DEP)
 	@$(CXX) $(DEPFLAGS) $< -o $@ 
 
 # clean
@@ -113,7 +112,7 @@ $(BIN)/%.d: %.cxx
 CLEANLIST     = *~ *.o *.o~ *.d core 
 clean:
 	rm -fr $(CLEANLIST) $(CLEANLIST:%=$(BIN)/%) $(CLEANLIST:%=$(DEP)/%)
-	rm -fr $(BIN) $(OUTPUT) $(DICT)
+	rm -fr $(BIN) $(OUTPUT) $(DICT) $(DEP)
 
 rmdep: 
 	rm -f $(DEP)/*.d
