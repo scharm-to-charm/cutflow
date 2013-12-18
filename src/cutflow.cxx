@@ -343,10 +343,16 @@ int main (int narg, const char* argv[]) {
 	   itr = good_jets.begin(); 
 	 itr != good_jets.end(); itr++) { 
       bool signal_pt = itr->Pt() > 20e3; // was 30, for mindphi(jet-MET)
-      bool tag_eta = std::abs(itr->Eta()) < 2.8; // was 2.5. Don't care about tagging this, just veto if pT>50.  
+
+      // the eta requirement for tagging used to be made here, now it's 
+      // done when we check for tags. 
+      bool ok_eta = std::abs(itr->Eta()) < 2.8; // was 2.5 (for tagging)
+
       float jet_jvf = buffer.jet_jvtxf->at(itr->index); 
-      bool ok_jvf = ( (abs(jet_jvf) > 0.5) || (itr->Pt() > 50e3) || (itr->Eta() > 2.4) );
-      if (signal_pt && tag_eta && ok_jvf) { 
+      bool ok_jvf_frac = jet_jvf > 0.5; 
+      bool ok_jvf = ( ok_jvf_frac || (itr->Pt() > 50e3) || (itr->Eta() > 2.4) );
+      bool no_tracks = jet_jvf < 0.0; // unused (not using trackless jets)
+      if (signal_pt && ok_eta && ok_jvf )  { 
 	so.signal_jets.push_back(*itr); 
       }
     }
