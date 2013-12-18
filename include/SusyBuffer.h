@@ -19,7 +19,9 @@ public :
   unsigned int RunNumber; 
   unsigned int EventNumber; 
   unsigned lbn; 
-  bool          trigger; 
+  bool          xe80_tclcw_tight; 
+  bool          xe80T_tclcw_loose; 
+  bool          xe80_tclcw_loose; 
   float         averageIntPerXing;
   unsigned        larError;
   unsigned        tileError;

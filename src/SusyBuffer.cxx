@@ -22,7 +22,9 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("EventNumber", &EventNumber); 
   fChain->SetBranch("lbn", &lbn); 
 
-  fChain->SetBranch("EF_xe80_tclcw_tight", &trigger); 
+  fChain->SetBranch("EF_xe80_tclcw_tight", &xe80_tclcw_tight); 
+  fChain->SetBranch("EF_xe80T_tclcw_loose", &xe80T_tclcw_loose); 
+  fChain->SetBranch("EF_xe80_tclcw_loose", &xe80_tclcw_loose); 
   fChain->SetBranch("coreFlags", &coreFlags); 
   
   fChain->SetBranch("top_hfor_type", &hfor_type); 
