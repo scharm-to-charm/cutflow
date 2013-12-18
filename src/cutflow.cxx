@@ -56,7 +56,8 @@ struct SelectionObjects
   bool pass_grl; 
   bool has_cosmic_muon; 
   bool has_bad_muon; 
-  bool has_bad_tile; 
+  bool has_bad_tile;
+  double energy_weighted_time; 
 }; 
 
 // multiple object selections are called within the event loop
@@ -91,6 +92,10 @@ double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer,
 // bad tile veto 
 bool has_bad_tile(const std::vector<IdLorentzVector>& jets, 
 		  const TVector2& met, const SusyBuffer& buffer); 
+
+// energy weighted time
+double energy_weighted_time(const std::vector<IdLorentzVector>& jets,
+			    int njets, const SusyBuffer& buffer);
 
 // IO functions
 void dump_counts(const CutCounter&, std::string); 
@@ -340,11 +345,12 @@ int main (int narg, const char* argv[]) {
       bool signal_pt = itr->Pt() > 20e3; // was 30, for mindphi(jet-MET)
       bool tag_eta = std::abs(itr->Eta()) < 2.8; // was 2.5. Don't care about tagging this, just veto if pT>50.  
       float jet_jvf = buffer.jet_jvtxf->at(itr->index); 
-      bool ok_jvf = ( (jet_jvf > 0.5) || (itr->Pt() > 50e3) || (itr->Eta() > 2.4) ); // this is what I meant about JVF eta outside tracker
+      bool ok_jvf = ( (abs(jet_jvf) > 0.5) || (itr->Pt() > 50e3) || (itr->Eta() > 2.4) );
       if (signal_pt && tag_eta && ok_jvf) { 
 	so.signal_jets.push_back(*itr); 
       }
     }
+    
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.veto_electrons.begin(); 
 	 itr != so.veto_electrons.end(); itr++) { 
@@ -457,6 +463,10 @@ int main (int narg, const char* argv[]) {
     
     // ---- bad tile cut ----
     so.has_bad_tile = has_bad_tile(preselected_jets, so.met, buffer); 
+    
+    // ---- energy weighted time ----
+    so.energy_weighted_time = energy_weighted_time(so.signal_jets, 2, buffer); // 2 jets in SRA-type regions
+    //preselected, after_overlap, good, signal
 
     // ---- event weights ----
     double ctag_wt = 1; 
@@ -524,6 +534,9 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   if(has_lar_error && so.is_data) return false; 
   counter["lar_error"] += weight; 
     
+  if (abs(so.energy_weighted_time) > 5) return false; // 0L has >4, sbottoms had >5
+  counter["energy_weighted_time"] += weight;
+
   if (buffer.coreFlags & 0x40000 && so.is_data) return false; 
   counter["core_flags"] += weight; 
 
@@ -834,6 +847,23 @@ bool has_bad_tile(const std::vector<IdLorentzVector>& jets,
     }
   }
   return false; 
+}
+
+double energy_weighted_time(const std::vector<IdLorentzVector>& jets, /////NB: different function when include
+			    int njets, const SusyBuffer& buffer) {    /////    leptons in control regions
+  double denom = 0.;
+  double num = 0.;
+  for (std::vector<IdLorentzVector>::const_iterator itr = jets.begin(); 
+       itr != jets.end(); itr++) {
+    njets --;
+    if (njets < 0) break;
+    denom += itr->E();
+    num += (itr->E())*(buffer.jet_Timing->at(itr->index));
+  }
+  if (jets.size()==0)
+    return 0.;
+  else
+    return num/denom;
 }
 
 
