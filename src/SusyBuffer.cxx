@@ -22,9 +22,24 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("EventNumber", &EventNumber); 
   fChain->SetBranch("lbn", &lbn); 
 
+  // --- trigger branches ----
+  // met
   fChain->SetBranch("EF_xe80_tclcw_tight", &xe80_tclcw_tight); 
   fChain->SetBranch("EF_xe80T_tclcw_loose", &xe80T_tclcw_loose); 
   fChain->SetBranch("EF_xe80_tclcw_loose", &xe80_tclcw_loose); 
+  // lepton 
+  fChain->SetBranch("EF_mu18_tight_mu8_EFFS", &EF_mu18_tight_mu8_EFFS); 
+  fChain->SetBranch("EF_mu24i_tight" 	    , &EF_mu24i_tight);         
+  fChain->SetBranch("EF_mu36_tight"         , &EF_mu36_tight);           
+  // lepton trigger matching
+  fChain->SetBranch("trig_EF_el_EF_e24vhi_medium1", 
+		    &trig_EF_el_EF_e24vhi_medium1);  
+  fChain->SetBranch("trig_EF_el_EF_e60_medium1",    
+		    &trig_EF_el_EF_e60_medium1);    
+  fChain->SetBranch("trig_EF_el_EF_2e12Tvh_loose1", 
+		    &trig_EF_el_EF_2e12Tvh_loose1);  
+
+  // --- misc event ----
   fChain->SetBranch("coreFlags", &coreFlags); 
   
   fChain->SetBranch("top_hfor_type", &hfor_type); 

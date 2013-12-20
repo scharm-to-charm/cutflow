@@ -351,8 +351,8 @@ int main (int narg, const char* argv[]) {
       float jet_jvf = buffer.jet_jvtxf->at(itr->index); 
       bool ok_jvf_frac = jet_jvf > 0.5; 
       bool ok_jvf = ( ok_jvf_frac || (itr->Pt() > 50e3) || (itr->Eta() > 2.4) );
-      bool no_tracks = jet_jvf < 0.0; // unused (not using trackless jets)
-      if (signal_pt && ok_eta && ok_jvf )  { 
+      bool no_tracks = jet_jvf < -0.5; // no-track jets should have -1
+      if (signal_pt && ok_eta && ( ok_jvf || no_tracks) )  { 
 	so.signal_jets.push_back(*itr); 
       }
     }
