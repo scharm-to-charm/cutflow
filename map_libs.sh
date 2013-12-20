@@ -16,7 +16,7 @@ USE_HEADER="SUSYTools MissingETUtility egammaAnalysisUtils GoodRunsLists\
 
 if [[ $1 == '-l' ]]
 then
-    lib_path=${ROOTCOREDIR}/lib/${ROOTCOREARCH#/}
+    lib_path=${ROOTCOREDIR}/lib/${ROOTCORECONFIG#/}
     echo -n -L${lib_path%/}" "
     echo -n -Wl,-rpath,${lib_path%/}" "
     for l in $USE_LIBS
