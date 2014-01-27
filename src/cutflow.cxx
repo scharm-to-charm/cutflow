@@ -26,8 +26,8 @@ const std::string g_grl_file = "grl.xml";
 const std::string g_btag_file = "cdi.root"; 
 // ================= output ================
 // list of set branches (set to "" for std::cout)
-// const std::string g_set_branches = "set_branches.txt"; 
-const std::string g_set_branches = "/dev/null"; 
+const std::string g_set_branches = "branches.txt"; 
+// const std::string g_set_branches = "/dev/null"; 
 // =========================================
 
 // minimal class to keep track of particles
