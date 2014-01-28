@@ -39,6 +39,8 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
 		    &trig_EF_el_EF_e60_medium1);    
   fChain->SetBranch("trig_EF_el_EF_2e12Tvh_loose1", 
 		    &trig_EF_el_EF_2e12Tvh_loose1);  
+  fChain->SetBranch("trig_EF_el_eta", &trig_EF_el_eta); 
+  fChain->SetBranch("trig_EF_el_phi", &trig_EF_el_phi); 
 
   fChain->SetBranch("trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS", 
 		    &trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS); 

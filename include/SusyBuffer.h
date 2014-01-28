@@ -30,6 +30,8 @@ public :
   std::vector<int>* trig_EF_el_EF_e24vhi_medium1; 
   std::vector<int>* trig_EF_el_EF_e60_medium1; 
   std::vector<int>* trig_EF_el_EF_2e12Tvh_loose1; 
+  std::vector<float>* trig_EF_el_eta; 
+  std::vector<float>* trig_EF_el_phi; 
 
   std::vector<int>* trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS; 
   std::vector<int>* trig_EF_trigmuonef_EF_mu24i_tight; 	    

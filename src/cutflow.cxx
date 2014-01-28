@@ -11,6 +11,7 @@
 #include "TLorentzVector.h"
 #include "GoodRunsLists/TGRLCollection.h"
 #include "GoodRunsLists/TGoodRunsListReader.h"
+#include "egammaAnalysisUtils/egammaTriggerMatching.h"
 
 #include <fstream>
 #include <stdexcept> 
@@ -57,6 +58,8 @@ struct SelectionObjects
   bool has_cosmic_muon; 
   bool has_bad_muon; 
   bool has_bad_tile;
+  bool has_trigger_matched_muon; 
+  bool has_trigger_matched_electron; 
   double energy_weighted_time; 
 }; 
 
@@ -64,10 +67,12 @@ struct SelectionObjects
 void signal_selection(const SelectionObjects&, SUSYObjDef* def, 
 		      const SusyBuffer& buffer, CutCounter& counter, 
 		      double weight = 1.0); 
-void el_cr_selection(const SelectionObjects&, SUSYObjDef* def, 
-		     const SusyBuffer& buffer, CutCounter& counter); 
-void mu_cr_selection(const SelectionObjects&, SUSYObjDef* def, 
-		     const SusyBuffer& buffer, CutCounter& counter); 
+void cra_1l_selection(const SelectionObjects&, SUSYObjDef* def, 
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight = 1.0); 
+void cra_sf_selection(const SelectionObjects&, SUSYObjDef* def, 
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight = 1.0); 
 
 // these functions check to see if the object passed the SUSYObjDef cuts
 std::vector<IdLorentzVector> filter_pass(const std::vector<IdLorentzVector>&); 
@@ -82,10 +87,15 @@ bool has_medium_tag(int jet_index, const SusyBuffer& buffer);
 bool has_higher_pt(const TLorentzVector& v1, const TLorentzVector& v2); 
 // scalar sum for first n jets
 double scalar_sum_pt(const std::vector<IdLorentzVector>& obj, size_t num); 
+// opposite sign same flavor selection (for control regions)
+bool has_os_sf_pair(const std::vector<IdLorentzVector>& electrons, 
+		    const std::vector<IdLorentzVector>& muons, 
+		    const SusyBuffer& buffer); 
 // m_ct function 
 double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2); 
 double get_mctcorr(const TLorentzVector& v1, const TLorentzVector& v2, 
 		   const TVector2& vmet);
+double get_mt(const TLorentzVector& lep, const TVector2& met); 
 // ctag sf function (wrapper for CtagCalibration)
 double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
 		   const CtagCalibration& ctag_cal); 
@@ -96,6 +106,14 @@ bool has_bad_tile(const std::vector<IdLorentzVector>& jets,
 // energy weighted time
 double energy_weighted_time(const std::vector<IdLorentzVector>& jets,
 			    int njets, const SusyBuffer& buffer);
+
+
+// trigger match checks 
+bool has_trigger_matched_electron(const std::vector<IdLorentzVector>& el, 
+				  const SusyBuffer& buffer); 
+bool has_trigger_matched_muon(const std::vector<IdLorentzVector>& mu, 
+			      const SusyBuffer& buffer, 
+			      SUSYObjDef& def); 
 
 // IO functions
 void dump_counts(const CutCounter&, std::string); 
@@ -152,6 +170,8 @@ int main (int narg, const char* argv[]) {
   CutCounter signal_counter_ctag_wt; 
   CutCounter el_cr_counter; 
   CutCounter mu_cr_counter; 
+  CutCounter cra_1l_counter; 
+  CutCounter cra_sf_counter; 
 
   // const long long max_entries = 10LL; 
   const long long max_entries = 100000000LL; 
@@ -474,6 +494,12 @@ int main (int narg, const char* argv[]) {
     so.energy_weighted_time = energy_weighted_time(so.signal_jets, 2, buffer); // 2 jets in SRA-type regions
     //preselected, after_overlap, good, signal
 
+    // ---- trigger matching ----
+    so.has_trigger_matched_muon = has_trigger_matched_muon(
+      so.control_muons, buffer, *def); 
+    so.has_trigger_matched_electron = has_trigger_matched_electron(
+      so.control_electrons, buffer); 
+
     // ---- event weights ----
     double ctag_wt = 1; 
     if (ctag_cal) {
@@ -490,8 +516,8 @@ int main (int narg, const char* argv[]) {
     signal_selection(so, def, buffer, signal_counter_mc_wt, 
 		     buffer.mcevt_weight->at(0).at(0)); 
     signal_selection(so, def, buffer, signal_counter_ctag_wt, ctag_wt); 
-    el_cr_selection(so, def, buffer, el_cr_counter); 
-    mu_cr_selection(so, def, buffer, mu_cr_counter); 
+    cra_1l_selection(so, def, buffer, cra_1l_counter); 
+    cra_sf_selection(so, def, buffer, cra_sf_counter); 
 
   } // end of event loop
 
@@ -500,8 +526,8 @@ int main (int narg, const char* argv[]) {
   dump_counts(signal_counter, "signal region"); 
   dump_counts(signal_counter_mc_wt, "signal region evt wt"); 
   dump_counts(signal_counter_ctag_wt, "signal region tag wt"); 
-  // dump_counts(el_cr_counter, "el control region"); 
-  // dump_counts(mu_cr_counter, "mu control region"); 
+  dump_counts(cra_1l_counter, "CRA 1L"); 
+  dump_counts(cra_sf_counter, "CRA SF"); 
   dump_branches(chain->get_all_branch_names(), g_set_branches); 
 }
 
@@ -636,85 +662,174 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   
 } // end of signal region cutflow
 
-void el_cr_selection(const SelectionObjects& so, SUSYObjDef* def, 
-		     const SusyBuffer& buffer, CutCounter& counter){
-  bool pass_preselection = common_preselection(so, def, buffer, counter, 1.0); 
+void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def, 
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight){
+    
+  bool pass_preselection = common_preselection(
+    so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
-    
-  if (so.veto_muons.size()) return; 
-  counter["muon_veto"]++; 
 
-  if (so.veto_jets.size()) return; 
-  counter["bad_jet_veto"]++; 
-
-  if (so.control_electrons.size() != 1) return; 
-  counter["electron_jet"]++; 
-  std::vector<IdLorentzVector> jets = so.signal_jets; 
-  jets.push_back(so.electron_jet); 
-  std::sort(jets.begin(), jets.end(), has_higher_pt); 
-    
-  const size_t n_jets = 3; 
-  if (jets.size() < n_jets) return; 
-  counter["n_jet"]++; 
-    
-  TLorentzVector met_4vec; 
-  met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
-  float min_dphi = 1000; 
-  for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = jets.begin(); itr < jets.begin() + n_jets; 
-       itr++) { 
-    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
-    min_dphi = std::min(deltaphi, min_dphi); 
-  }
-  if (min_dphi < 0.4) return; 
-  counter["dphi_jetmet_min"]++; 
-    
-  if (so.met.Mod() < 150e3) return; 
-  counter["met_150"]++; 
+  int total_leptons = so.control_electrons.size() + so.control_muons.size();
+  if (total_leptons != 1) return; 
+  counter["pass_1l"] += weight; 
   
-  if (jets.at(0).Pt() < 150e3) return; 
-  counter["leading_jet_150"]++; 
+  // control leptons are a subset of the veto leptons, so we shouldn't
+  // have any additional veto leptons. 
+  int total_veto_leptons = so.veto_electrons.size() + so.veto_muons.size(); 
+  if (total_veto_leptons != total_leptons) return; 
+  counter["pass_lepton_veto"] += weight; 
 
-} // end of el cr cutflow
-
-void mu_cr_selection(const SelectionObjects& so, SUSYObjDef* def, 
-		     const SusyBuffer& buffer, CutCounter& counter){
-
-  bool pass_preselection = common_preselection(so, def, buffer, counter, 1.0); 
-  if (!pass_preselection) return; 
+  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
+  if (clean_for_chf) return; 
+  counter["pass_chf"] += weight; 
     
-  if (so.veto_electrons.size()) return; 
-  counter["electron_veto"]++; 
+  if (so.met.Mod() < 100e3) return; 
+  counter["met_100"] += weight; 
 
-  if (so.veto_muons.size() != 1) return; 
-  counter["muon_requirement"]++; 
-
-  if (so.veto_jets.size()) return; 
-  counter["bad_jet_veto"]++; 
-    
-  const size_t n_jets = 3; 
+  const size_t n_jets = 2; 
   if (so.signal_jets.size() < n_jets) return; 
-  counter["n_jet"]++; 
-    
+  counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
+  
+  if (so.signal_jets.at(0).Pt() < 130e3) return; 
+  counter["leading_jet_130"] += weight; 
+
+  if (so.signal_jets.at(1).Pt() < 50e3) return; 
+  counter["second_jet_50"] += weight; 
+
+  if (so.signal_jets.size() > 2) {
+    if (so.signal_jets.at(2).Pt() > 50e3) return;
+  }
+  counter["third_jet_veto50"] += weight; 
+
   TLorentzVector met_4vec; 
   met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
   float min_dphi = 1000; 
   for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets; 
-       itr++) { 
+	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
+       itr++){
     float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
     min_dphi = std::min(deltaphi, min_dphi); 
   }
-  if (min_dphi < 0.4) return; 
-  counter["dphi_jetmet_min"]++; 
-  
-  if (so.mu_met.Mod() < 150e3) return; 
-  counter["mu_met_150"]++; 
-    
-  if (so.signal_jets.at(0).Pt() < 150e3) return; 
-  counter["leading_jet_150"]++; 
+  if (so.signal_jets.size() > 2) {
+    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
+    min_dphi = std::min(deltaphi, min_dphi);
+  }
 
-} // end of mu control region cutflow
+  if (min_dphi < 0.4) return; 
+  counter["dphi_jetmet_min"] += weight; 
+
+  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
+  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+
+  if (! (medium_first || medium_second) ) return; 
+  counter["at_least_one_ctag"] += weight; 
+  if (! (medium_first && medium_second) ) return; 
+  counter["two_ctag"] += weight; 
+
+  double mass_ct = get_mctcorr(so.signal_jets.at(0), 
+			       so.signal_jets.at(1), so.met); 
+  if (mass_ct < 150e3) return; 
+  counter["m_ct_150"] += weight; 
+
+  TLorentzVector lep = so.control_muons.size() == 1 ? 
+    so.control_muons.at(0) : so.control_electrons.at(0); 
+  double mt = get_mt(lep, so.met); 
+  if (!(40e3 < mt && mt < 100e3)) return; 
+  counter["mt"] += weight; 
+  
+} // end of cra_1l_selection
+
+void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def, 
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight){
+    
+  bool pass_preselection = common_preselection(
+    so, def, buffer, counter, weight); 
+  if (!pass_preselection) return; 
+
+  int n_el = so.control_electrons.size();
+  int n_mu = so.control_muons.size();
+  int total_leptons = n_mu + n_el; 
+  bool ossf_pair = has_os_sf_pair(
+    so.control_electrons, so.control_muons, buffer); 
+  if (!ossf_pair) return; 
+  counter["pass_ossf"] += weight; 
+  
+  IdLorentzVector lep1 = n_mu == 2 ? 
+    so.control_muons.at(0) : so.control_electrons.at(0); 
+  IdLorentzVector lep2 = n_mu == 2 ? 
+    so.control_muons.at(1) : so.control_electrons.at(1); 
+  
+  // control leptons are a subset of the veto leptons, so we shouldn't
+  // have any additional veto leptons. 
+  int total_veto_leptons = so.veto_electrons.size() + so.veto_muons.size(); 
+  if (total_veto_leptons != total_leptons) return; 
+  counter["pass_lepton_veto"] += weight; 
+
+  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
+  if (clean_for_chf) return; 
+  counter["pass_chf"] += weight; 
+    
+  TVector2 lept_met = n_mu == 2 ? 
+    so.met + lep1.Vect().XYvector() + lep2.Vect().XYvector() : so.met; 
+  if (lept_met.Mod() < 100e3) return; 
+  counter["met_100"] += weight; 
+
+  const size_t n_jets = 2; 
+  if (so.signal_jets.size() < n_jets) return; 
+  counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
+  
+  if (so.signal_jets.at(0).Pt() < 130e3) return; 
+  counter["leading_jet_50"] += weight; 
+
+  if (so.signal_jets.at(1).Pt() < 50e3) return; 
+  counter["second_jet_50"] += weight; 
+
+  if (so.signal_jets.size() > 2) {
+    if (so.signal_jets.at(2).Pt() > 50e3) return;
+  }
+  counter["third_jet_veto50"] += weight; 
+
+  TLorentzVector met_4vec; 
+  met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
+  float min_dphi = 1000; 
+  for (std::vector<IdLorentzVector>::const_iterator 
+	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
+       itr++){
+    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
+    min_dphi = std::min(deltaphi, min_dphi); 
+  }
+  if (so.signal_jets.size() > 2) {
+    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
+    min_dphi = std::min(deltaphi, min_dphi);
+  }
+
+  if (min_dphi < 0.4) return; 
+  counter["dphi_jetmet_min"] += weight; 
+
+  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
+  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+
+  if (! (medium_first || medium_second) ) return; 
+  counter["at_least_one_ctag"] += weight; 
+  if (! (medium_first && medium_second) ) return; 
+  counter["two_ctag"] += weight; 
+
+  double m_ll = (lep1 + lep2).M(); 
+  if (! (75e3 < m_ll && m_ll < 105e3)) return; 
+  counter["mll_zpeak"] += weight; 
+
+  double lepton_pt = std::max(lep1.Pt(), lep2.Pt()); 
+  if (! lepton_pt > 90e3) return; 
+  counter["lepton_pt_90"] += weight; 
+
+  double mass_cc = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
+  if (mass_cc < 200e3) return; 
+  counter["m_cc"] += weight; 
+  
+} // end of cra_sf_selection
+
 
 
 // ===== selection functions =======
@@ -760,6 +875,29 @@ A remove_overlaping(const M& mask, A altered, const float delta_r) {
   }
   return altered; 
 } 
+
+bool has_os_sf_pair(const std::vector<IdLorentzVector>& electrons, 
+		    const std::vector<IdLorentzVector>& muons, 
+		    const SusyBuffer& buffer) { 
+  int n_el = electrons.size();
+  int n_mu = muons.size();
+  int total_leptons = n_mu + n_el; 
+  if (total_leptons != 2) return false; 
+  if (n_mu != 2 && n_el != 2) return false; 
+  
+  if (n_el == 2) { 
+    float l1_charge = buffer.el_charge->at(electrons.at(0).index); 
+    float l2_charge = buffer.el_charge->at(electrons.at(1).index); 
+    return l1_charge * l2_charge < 0.0; 
+  } else if (n_mu == 2) { 
+    float l1_charge = buffer.mu_staco_charge->at(muons.at(0).index); 
+    float l2_charge = buffer.mu_staco_charge->at(muons.at(1).index); 
+    return l1_charge * l2_charge < 0.0; 
+  }
+  assert(false); 		// shouldn't get here
+
+}
+
 
 // ================= calc functions ==================
 
@@ -808,6 +946,12 @@ double get_mctcorr(const TLorentzVector& tv1, const TLorentzVector& tv2,
   return mct_object.mctcorr(v1, v2, vds, ptm, 8e6, 0.0);
 }
 
+double get_mt(const TLorentzVector& lep, const TVector2& met) { 
+  TVector2 lep2vec = lep.Vect().XYvector(); 
+  return std::sqrt(2*lep2vec.Mod()*met.Mod() - 2*lep2vec*met);
+}
+
+
 std::vector<size_t> get_indices(const std::vector<IdLorentzVector>& vecs) { 
   std::vector<size_t> indices; 
   for (std::vector<IdLorentzVector>::const_iterator itr = vecs.begin(); 
@@ -815,6 +959,63 @@ std::vector<size_t> get_indices(const std::vector<IdLorentzVector>& vecs) {
     indices.push_back(itr->index); 
   }
   return indices; 
+}
+
+// ================= trigger matching =================
+// trigger match checks 
+bool has_trigger_matched_electron(const std::vector<IdLorentzVector>& el, 
+				  const SusyBuffer& buffer) { 
+  for (std::vector<IdLorentzVector>::const_iterator itr = el.begin(); 
+       itr != el.end(); itr++) { 
+    
+    int nothing; 
+    if (PassedTriggerEF(
+      itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e24vhi_medium1, 
+      nothing, buffer.trig_EF_el_eta->size(), 
+      buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
+    if (PassedTriggerEF(
+      itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e60_medium1, 
+      nothing, buffer.trig_EF_el_eta->size(), 
+      buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
+    if (PassedTriggerEF(
+      itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_2e12Tvh_loose1, 
+      nothing, buffer.trig_EF_el_eta->size(), 
+      buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
+  }
+  return false; 
+}
+bool has_trigger_matched_muon(const std::vector<IdLorentzVector>& mu, 
+			      const SusyBuffer& buffer, 
+			      SUSYObjDef& def) { 
+  for (std::vector<IdLorentzVector>::const_iterator itr = mu.begin(); 
+       itr != mu.end(); itr++) { 
+    int nothing; 
+    if (def.MuonHasTriggerMatch(
+	  itr->Eta(), itr->Phi(), 
+	  buffer.trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS, 
+	  nothing, nothing, 
+	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
+	  buffer.trig_EF_trigmuonef_track_CB_eta, 
+	  buffer.trig_EF_trigmuonef_track_CB_phi, 
+	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
+    if (def.MuonHasTriggerMatch(
+	  itr->Eta(), itr->Phi(), 
+	  buffer.trig_EF_trigmuonef_EF_mu24i_tight, 
+	  nothing, nothing, 
+	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
+	  buffer.trig_EF_trigmuonef_track_CB_eta, 
+	  buffer.trig_EF_trigmuonef_track_CB_phi, 
+	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
+    if (def.MuonHasTriggerMatch(
+	  itr->Eta(), itr->Phi(), 
+	  buffer.trig_EF_trigmuonef_EF_mu36_tight, 
+	  nothing, nothing, 
+	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
+	  buffer.trig_EF_trigmuonef_track_CB_eta, 
+	  buffer.trig_EF_trigmuonef_track_CB_phi, 
+	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
+  }
+  return false; 
 }
 
 // ================= reweighting functions ============
