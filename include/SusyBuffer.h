@@ -19,6 +19,7 @@ public :
   unsigned int RunNumber; 
   unsigned int EventNumber; 
   unsigned lbn; 
+
   // --- trigger branches ---
   bool          xe80_tclcw_tight; 
   bool          xe80T_tclcw_loose; 
@@ -29,7 +30,17 @@ public :
   std::vector<int>* trig_EF_el_EF_e24vhi_medium1; 
   std::vector<int>* trig_EF_el_EF_e60_medium1; 
   std::vector<int>* trig_EF_el_EF_2e12Tvh_loose1; 
+  std::vector<float>* trig_EF_el_eta; 
+  std::vector<float>* trig_EF_el_phi; 
 
+  std::vector<int>* trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS; 
+  std::vector<int>* trig_EF_trigmuonef_EF_mu24i_tight; 	    
+  std::vector<int>* trig_EF_trigmuonef_EF_mu36_tight;          
+  std::vector<std::vector<float> >* trig_EF_trigmuonef_track_CB_eta; 
+  std::vector<std::vector<float> >* trig_EF_trigmuonef_track_CB_phi; 
+  std::vector<std::vector<int> >* trig_EF_trigmuonef_track_CB_hasCB; 
+
+  // --- misc event info ---
   float         averageIntPerXing;
   unsigned        larError;
   unsigned        tileError;

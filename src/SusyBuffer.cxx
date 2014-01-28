@@ -27,10 +27,11 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("EF_xe80_tclcw_tight", &xe80_tclcw_tight); 
   fChain->SetBranch("EF_xe80T_tclcw_loose", &xe80T_tclcw_loose); 
   fChain->SetBranch("EF_xe80_tclcw_loose", &xe80_tclcw_loose); 
-  // lepton 
+  // muon
   fChain->SetBranch("EF_mu18_tight_mu8_EFFS", &EF_mu18_tight_mu8_EFFS); 
   fChain->SetBranch("EF_mu24i_tight" 	    , &EF_mu24i_tight);         
   fChain->SetBranch("EF_mu36_tight"         , &EF_mu36_tight);           
+
   // lepton trigger matching
   fChain->SetBranch("trig_EF_el_EF_e24vhi_medium1", 
 		    &trig_EF_el_EF_e24vhi_medium1);  
@@ -38,6 +39,22 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
 		    &trig_EF_el_EF_e60_medium1);    
   fChain->SetBranch("trig_EF_el_EF_2e12Tvh_loose1", 
 		    &trig_EF_el_EF_2e12Tvh_loose1);  
+  fChain->SetBranch("trig_EF_el_eta", &trig_EF_el_eta); 
+  fChain->SetBranch("trig_EF_el_phi", &trig_EF_el_phi); 
+
+  fChain->SetBranch("trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS", 
+		    &trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS); 
+  fChain->SetBranch("trig_EF_trigmuonef_EF_mu24i_tight", 
+		    &trig_EF_trigmuonef_EF_mu24i_tight); 
+  fChain->SetBranch("trig_EF_trigmuonef_EF_mu36_tight", 
+		    &trig_EF_trigmuonef_EF_mu36_tight); 
+
+  fChain->SetBranch("trig_EF_trigmuonef_track_CB_eta", 
+		    &trig_EF_trigmuonef_track_CB_eta); 
+  fChain->SetBranch("trig_EF_trigmuonef_track_CB_phi", 
+		    &trig_EF_trigmuonef_track_CB_phi); 
+  fChain->SetBranch("trig_EF_trigmuonef_track_CB_hasCB", 
+		    &trig_EF_trigmuonef_track_CB_hasCB); 
 
   // --- misc event ----
   fChain->SetBranch("coreFlags", &coreFlags); 
