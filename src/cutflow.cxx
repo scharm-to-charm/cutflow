@@ -546,19 +546,9 @@ int main (int narg, const char* argv[]) {
 bool common_preselection(const SelectionObjects& so, SUSYObjDef* def, 
 			 const SusyBuffer& buffer, CutCounter& counter, 
 			 double weight) { 
-  counter["total"] += weight; 
 
   if (!so.pass_grl) return false; 
   counter["grl"] += weight; 
-
-  bool met_trig = buffer.xe80_tclcw_tight || buffer.xe80T_tclcw_loose; 
-  bool mu_trig = buffer.EF_mu18_tight_mu8_EFFS || buffer.EF_mu24i_tight ||
-    buffer.EF_mu36_tight; 
-  bool el_trig = buffer.EF_2e12Tvh_loose1 || buffer.EF_e24vhi_medium1 ||
-    buffer.EF_e60_medium1; 
-
-  if (! (met_trig || mu_trig || el_trig)) return false; 
-  counter["trigger"] += weight; 
 
   bool pass_vxp = def->IsGoodVertex(buffer.vx_nTracks); 
   if (!pass_vxp) return false; 
@@ -597,6 +587,25 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   return true; 
 }
 
+bool common_lepton_trigger_matching(const SelectionObjects& so, 
+				    const SusyBuffer& buffer, 
+				    CutCounter& counter, 
+				    double weight) {
+ 
+  bool mu_trig = buffer.EF_mu18_tight_mu8_EFFS || buffer.EF_mu24i_tight ||
+    buffer.EF_mu36_tight; 
+  bool el_trig = buffer.EF_2e12Tvh_loose1 || buffer.EF_e24vhi_medium1 ||
+    buffer.EF_e60_medium1; 
+  if (! (mu_trig || el_trig) ) return false; 
+  counter["pass_lepton_trigger"] += weight; 
+
+  if (! ( (so.has_trigger_matched_electron && el_trig) || 
+	  (so.has_trigger_matched_muon && mu_trig ) ) ) return false; 
+  counter["pass_lepton_trigger_match"] += weight; 
+  
+  return true; 
+}
+
 // ===============================================
 // ========= eventwise signal selection ==========
 // ===============================================
@@ -604,7 +613,12 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
 void signal_selection(const SelectionObjects& so, SUSYObjDef* def, 
 		      const SusyBuffer& buffer, CutCounter& counter, 
 		      double weight){
+  counter["total"] += weight; 
     
+  bool met_trig = buffer.xe80_tclcw_tight || buffer.xe80T_tclcw_loose; 
+  if (!met_trig) return; 
+  counter["met_trigger"] += weight; 
+
   bool pass_preselection = common_preselection(
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
@@ -681,7 +695,12 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def, 
 		      const SusyBuffer& buffer, CutCounter& counter, 
 		      double weight){
-    
+  counter["total"] += weight; 
+
+  bool pass_lepton_trigger = common_lepton_trigger_matching(
+    so, buffer, counter, weight); 
+  if (!pass_lepton_trigger) return; 
+
   bool pass_preselection = common_preselection(
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
@@ -759,6 +778,11 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
 void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def, 
 		      const SusyBuffer& buffer, CutCounter& counter, 
 		      double weight){
+  counter["total"] += weight; 
+
+  bool pass_lepton_trigger = common_lepton_trigger_matching(
+    so, buffer, counter, weight); 
+  if (!pass_lepton_trigger) return; 
     
   bool pass_preselection = common_preselection(
     so, def, buffer, counter, weight); 
@@ -849,6 +873,11 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
 void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def, 
 		      const SusyBuffer& buffer, CutCounter& counter, 
 		      double weight){
+  counter["total"] += weight; 
+
+  bool pass_lepton_trigger = common_lepton_trigger_matching(
+    so, buffer, counter, weight); 
+  if (!pass_lepton_trigger) return; 
     
   bool pass_preselection = common_preselection(
     so, def, buffer, counter, weight); 
