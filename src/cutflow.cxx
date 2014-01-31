@@ -73,6 +73,9 @@ void cra_1l_selection(const SelectionObjects&, SUSYObjDef* def,
 void cra_sf_selection(const SelectionObjects&, SUSYObjDef* def, 
 		      const SusyBuffer& buffer, CutCounter& counter, 
 		      double weight = 1.0); 
+void cra_of_selection(const SelectionObjects&, SUSYObjDef* def, 
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight = 1.0); 
 
 // these functions check to see if the object passed the SUSYObjDef cuts
 std::vector<IdLorentzVector> filter_pass(const std::vector<IdLorentzVector>&); 
@@ -89,6 +92,10 @@ bool has_higher_pt(const TLorentzVector& v1, const TLorentzVector& v2);
 double scalar_sum_pt(const std::vector<IdLorentzVector>& obj, size_t num); 
 // opposite sign same flavor selection (for control regions)
 bool has_os_sf_pair(const std::vector<IdLorentzVector>& electrons, 
+		    const std::vector<IdLorentzVector>& muons, 
+		    const SusyBuffer& buffer); 
+// opposite sign different flavor selection (for control regions)
+bool has_os_of_pair(const std::vector<IdLorentzVector>& electrons, 
 		    const std::vector<IdLorentzVector>& muons, 
 		    const SusyBuffer& buffer); 
 // m_ct function 
@@ -172,6 +179,7 @@ int main (int narg, const char* argv[]) {
   CutCounter mu_cr_counter; 
   CutCounter cra_1l_counter; 
   CutCounter cra_sf_counter; 
+  CutCounter cra_of_counter; 
 
   // const long long max_entries = 10LL; 
   const long long max_entries = 100000000LL; 
@@ -518,6 +526,7 @@ int main (int narg, const char* argv[]) {
     signal_selection(so, def, buffer, signal_counter_ctag_wt, ctag_wt); 
     cra_1l_selection(so, def, buffer, cra_1l_counter); 
     cra_sf_selection(so, def, buffer, cra_sf_counter); 
+    cra_of_selection(so, def, buffer, cra_of_counter); 
 
   } // end of event loop
 
@@ -528,6 +537,7 @@ int main (int narg, const char* argv[]) {
   dump_counts(signal_counter_ctag_wt, "signal region tag wt"); 
   dump_counts(cra_1l_counter, "CRA 1L"); 
   dump_counts(cra_sf_counter, "CRA SF"); 
+  dump_counts(cra_of_counter, "CRA DF"); 
   dump_branches(chain->get_all_branch_names(), g_set_branches); 
 }
 
@@ -541,8 +551,14 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   if (!so.pass_grl) return false; 
   counter["grl"] += weight; 
 
-  if (!buffer.xe80_tclcw_tight) return false; 
-  counter["xe80_tclcw_tight"] += weight; 
+  bool met_trig = buffer.xe80_tclcw_tight || buffer.xe80T_tclcw_loose; 
+  bool mu_trig = buffer.EF_mu18_tight_mu8_EFFS || buffer.EF_mu24i_tight ||
+    buffer.EF_mu36_tight; 
+  bool el_trig = buffer.EF_2e12Tvh_loose1 || buffer.EF_e24vhi_medium1 ||
+    buffer.EF_e60_medium1; 
+
+  if (! (met_trig || mu_trig || el_trig)) return false; 
+  counter["trigger"] += weight; 
 
   bool pass_vxp = def->IsGoodVertex(buffer.vx_nTracks); 
   if (!pass_vxp) return false; 
@@ -830,6 +846,84 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   
 } // end of cra_sf_selection
 
+void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def, 
+		      const SusyBuffer& buffer, CutCounter& counter, 
+		      double weight){
+    
+  bool pass_preselection = common_preselection(
+    so, def, buffer, counter, weight); 
+  if (!pass_preselection) return; 
+
+  bool ofos_pair = has_os_of_pair(
+    so.control_electrons, so.control_muons, buffer); 
+
+  if (!ofos_pair) return; 
+  counter["pass_ofos"] += weight; 
+  
+  // control leptons are a subset of the veto leptons, so we shouldn't
+  // have any additional veto leptons. 
+  int total_leptons = so.control_electrons.size() + so.control_muons.size();
+  int total_veto_leptons = so.veto_electrons.size() + so.veto_muons.size(); 
+  if (total_veto_leptons != total_leptons) return; 
+  counter["pass_lepton_veto"] += weight; 
+
+  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
+  if (clean_for_chf) return; 
+  counter["pass_chf"] += weight; 
+    
+  if (so.met.Mod() < 100e3) return; 
+  counter["met_100"] += weight; 
+
+  const size_t n_jets = 2; 
+  if (so.signal_jets.size() < n_jets) return; 
+  counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
+  
+  if (so.signal_jets.at(0).Pt() < 130e3) return; 
+  counter["leading_jet_130"] += weight; 
+
+  if (so.signal_jets.at(1).Pt() < 50e3) return; 
+  counter["second_jet_50"] += weight; 
+
+  if (so.signal_jets.size() > 2) {
+    if (so.signal_jets.at(2).Pt() > 50e3) return;
+  }
+  counter["third_jet_veto50"] += weight; 
+
+  TLorentzVector met_4vec; 
+  met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
+  float min_dphi = 1000; 
+  for (std::vector<IdLorentzVector>::const_iterator 
+	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
+       itr++){
+    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
+    min_dphi = std::min(deltaphi, min_dphi); 
+  }
+  if (so.signal_jets.size() > 2) {
+    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
+    min_dphi = std::min(deltaphi, min_dphi);
+  }
+
+  if (min_dphi < 0.4) return; 
+  counter["dphi_jetmet_min"] += weight; 
+
+  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
+  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+
+  if (! (medium_first || medium_second) ) return; 
+  counter["at_least_one_ctag"] += weight; 
+  if (! (medium_first && medium_second) ) return; 
+  counter["two_ctag"] += weight; 
+
+  double mass_ct = get_mctcorr(so.signal_jets.at(0), 
+			       so.signal_jets.at(1), so.met); 
+  if (mass_ct < 75e3) return; 
+  counter["m_ct_75"] += weight; 
+
+  double mll = (so.control_electrons.at(0) + so.control_muons.at(0)).M(); 
+  if (mll < 50) return; 
+  counter["mll"] += weight; 
+  
+} // end of cra_of_selection
 
 
 // ===== selection functions =======
@@ -896,6 +990,18 @@ bool has_os_sf_pair(const std::vector<IdLorentzVector>& electrons,
   }
   assert(false); 		// shouldn't get here
 
+}
+bool has_os_of_pair(const std::vector<IdLorentzVector>& electrons, 
+		    const std::vector<IdLorentzVector>& muons, 
+		    const SusyBuffer& buffer) { 
+  int n_el = electrons.size();
+  int n_mu = muons.size();
+  if (n_el != 1) return false; 
+  if (n_mu != 1) return false; 
+
+  float el_charge = buffer.el_charge->at(electrons.at(0).index); 
+  float mu_charge = buffer.mu_staco_charge->at(muons.at(0).index); 
+  return el_charge * mu_charge < 0.0; 
 }
 
 

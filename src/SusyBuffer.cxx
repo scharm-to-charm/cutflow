@@ -30,7 +30,11 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   // muon
   fChain->SetBranch("EF_mu18_tight_mu8_EFFS", &EF_mu18_tight_mu8_EFFS); 
   fChain->SetBranch("EF_mu24i_tight" 	    , &EF_mu24i_tight);         
-  fChain->SetBranch("EF_mu36_tight"         , &EF_mu36_tight);           
+  fChain->SetBranch("EF_mu36_tight"         , &EF_mu36_tight);
+  // electron 
+  fChain->SetBranch("EF_2e12Tvh_loose1", &EF_2e12Tvh_loose1); 
+  fChain->SetBranch("EF_e24vhi_medium1", &EF_e24vhi_medium1); 
+  fChain->SetBranch("EF_e60_medium1", &EF_e60_medium1); 
 
   // lepton trigger matching
   fChain->SetBranch("trig_EF_el_EF_e24vhi_medium1", 

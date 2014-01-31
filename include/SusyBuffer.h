@@ -27,6 +27,10 @@ public :
   bool      EF_mu18_tight_mu8_EFFS; 
   bool      EF_mu24i_tight; 
   bool      EF_mu36_tight;          
+  bool EF_2e12Tvh_loose1;
+  bool EF_e24vhi_medium1;
+  bool EF_e60_medium1;
+
   std::vector<int>* trig_EF_el_EF_e24vhi_medium1; 
   std::vector<int>* trig_EF_el_EF_e60_medium1; 
   std::vector<int>* trig_EF_el_EF_2e12Tvh_loose1; 
