@@ -103,6 +103,11 @@ double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2);
 double get_mctcorr(const TLorentzVector& v1, const TLorentzVector& v2, 
 		   const TVector2& vmet);
 double get_mt(const TLorentzVector& lep, const TVector2& met); 
+
+// delta phi between jets and met
+double get_min_dphi(const std::vector<IdLorentzVector>& jets, 
+		    const TVector2& met); 
+
 // ctag sf function (wrapper for CtagCalibration)
 double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
 		   const CtagCalibration& ctag_cal); 
@@ -651,20 +656,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   }
   counter["third_jet_veto50"] += weight; 
 
-  TLorentzVector met_4vec; 
-  met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
-  float min_dphi = 1000; 
-  for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
-       itr++){
-    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
-    min_dphi = std::min(deltaphi, min_dphi); 
-  }
-  if (so.signal_jets.size() > 2) {
-    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
-    min_dphi = std::min(deltaphi, min_dphi);
-  }
-
+  double min_dphi = get_min_dphi(so.signal_jets, so.met); 
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
 
@@ -737,20 +729,7 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
   }
   counter["third_jet_veto50"] += weight; 
 
-  TLorentzVector met_4vec; 
-  met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
-  float min_dphi = 1000; 
-  for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
-       itr++){
-    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
-    min_dphi = std::min(deltaphi, min_dphi); 
-  }
-  if (so.signal_jets.size() > 2) {
-    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
-    min_dphi = std::min(deltaphi, min_dphi);
-  }
-
+  double min_dphi = get_min_dphi(so.signal_jets, so.met); 
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
 
@@ -831,20 +810,7 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   }
   counter["third_jet_veto50"] += weight; 
 
-  TLorentzVector met_4vec; 
-  met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
-  float min_dphi = 1000; 
-  for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
-       itr++){
-    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
-    min_dphi = std::min(deltaphi, min_dphi); 
-  }
-  if (so.signal_jets.size() > 2) {
-    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
-    min_dphi = std::min(deltaphi, min_dphi);
-  }
-
+  double min_dphi = get_min_dphi(so.signal_jets, so.met); 
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
 
@@ -918,20 +884,7 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   }
   counter["third_jet_veto50"] += weight; 
 
-  TLorentzVector met_4vec; 
-  met_4vec.SetPtEtaPhiE(1, 0, so.met.Phi(), 1); 
-  float min_dphi = 1000; 
-  for (std::vector<IdLorentzVector>::const_iterator 
-	 itr = so.signal_jets.begin(); itr < so.signal_jets.begin() + n_jets;
-       itr++){
-    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
-    min_dphi = std::min(deltaphi, min_dphi); 
-  }
-  if (so.signal_jets.size() > 2) {
-    float deltaphi = std::abs(met_4vec.DeltaPhi(so.signal_jets.at(2)));
-    min_dphi = std::min(deltaphi, min_dphi);
-  }
-
+  double min_dphi = get_min_dphi(so.signal_jets, so.met); 
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
 
@@ -1086,6 +1039,25 @@ double get_mt(const TLorentzVector& lep, const TVector2& met) {
   return std::sqrt(2*lep2vec.Mod()*met.Mod() - 2*lep2vec*met);
 }
 
+double get_min_dphi(const std::vector<IdLorentzVector>& jets, 
+		    const TVector2& met) { 
+  assert(jets.size() >= 2); 
+
+  TLorentzVector met_4vec; 
+  met_4vec.SetPtEtaPhiE(1, 0, met.Phi(), 1); 
+  float min_dphi = 1000; 
+  for (std::vector<IdLorentzVector>::const_iterator 
+	 itr = jets.begin(); itr < jets.begin() + 2;
+       itr++){
+    float deltaphi = std::abs(met_4vec.DeltaPhi(*itr)); 
+    min_dphi = std::min(deltaphi, min_dphi); 
+  }
+  if (jets.size() > 2) {
+    float deltaphi = std::abs(met_4vec.DeltaPhi(jets.at(2)));
+    min_dphi = std::min(deltaphi, min_dphi);
+  }
+  return min_dphi; 
+}
 
 std::vector<size_t> get_indices(const std::vector<IdLorentzVector>& vecs) { 
   std::vector<size_t> indices; 
