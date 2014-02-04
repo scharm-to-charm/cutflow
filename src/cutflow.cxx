@@ -318,7 +318,7 @@ int main (int narg, const char* argv[]) {
     std::vector<IdLorentzVector> preselected_el = filter_pass(all_electrons); 
     std::vector<IdLorentzVector> preselected_mu = filter_pass(all_muons); 
     std::vector<IdLorentzVector> preselected_jets; 
-    for (std::vector<IdLorentzVector>::const_iterator jitr = all_jets.begin(); 
+    for (std::vector<IdLorentzVector>::const_iterator jitr = all_jets.begin();
 	 jitr != all_jets.end(); jitr++) { 
       bool is_good_pt = jitr->Pt() > 20e3; 
       bool is_good_eta = std::abs(jitr->Eta()) < 2.8; 
@@ -1156,7 +1156,7 @@ bool has_bad_tile(const std::vector<IdLorentzVector>& jets,
        itr != jets.end(); itr++) { 
     float BCH_CORR_JET = buffer.jet_BCH_CORR_JET->at(itr->index); 
     float dphi = met.DeltaPhi(itr->Vect().XYvector()); 
-    if (itr->Pt() > 40e3 && BCH_CORR_JET > 0.05 && abs(dphi) < 0.3) { 
+    if (itr->Pt() > 40e3 && BCH_CORR_JET > 0.05 && std::abs(dphi) < 0.3) { 
       return true; 
     }
   }
