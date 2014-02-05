@@ -85,7 +85,7 @@ std::vector<IdLorentzVector> filter_fail(const std::vector<IdLorentzVector>&);
 std::vector<size_t> get_indices(const std::vector<IdLorentzVector>&); 
 
 // check for c-tags
-bool has_medium_tag(int jet_index, const SusyBuffer& buffer); 
+bool has_medium_tag(const IdLorentzVector& jet, const SusyBuffer& buffer); 
 // for sorting
 bool has_higher_pt(const TLorentzVector& v1, const TLorentzVector& v2); 
 // scalar sum for first n jets
@@ -665,8 +665,8 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.met.Mod() / mass_eff < 0.25) return; 
   counter["met_eff"] += weight; 
 
-  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
-  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+  bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
+  bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
 
   if (! (medium_first || medium_second) ) return; 
   counter["at_least_one_ctag"] += weight; 
@@ -734,8 +734,8 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
 
-  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
-  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+  bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
+  bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
 
   if (! (medium_first || medium_second) ) return; 
   counter["at_least_one_ctag"] += weight; 
@@ -815,8 +815,8 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
 
-  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
-  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+  bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
+  bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
 
   if (! (medium_first || medium_second) ) return; 
   counter["at_least_one_ctag"] += weight; 
@@ -889,8 +889,8 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
 
-  bool medium_first =  (has_medium_tag(so.signal_jets.at(0).index, buffer) && (so.signal_jets.at(0).Eta()<2.5) ); // requiring eta<2.5 makes no difference 
-  bool medium_second = (has_medium_tag(so.signal_jets.at(1).index, buffer) && (so.signal_jets.at(1).Eta()<2.5) ); 
+  bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
+  bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
 
   if (! (medium_first || medium_second) ) return; 
   counter["at_least_one_ctag"] += weight; 
@@ -990,10 +990,13 @@ bool has_os_of_pair(const std::vector<IdLorentzVector>& electrons,
 
 // ================= calc functions ==================
 
-bool has_medium_tag(int jet_index, const SusyBuffer& buffer) { 
+bool has_medium_tag(const IdLorentzVector& jet, const SusyBuffer& buffer) { 
+  int jet_index = jet.index; 
   double pb = buffer.jet_flavor_component_jfitc_pb->at(jet_index); 
   double pc = buffer.jet_flavor_component_jfitc_pc->at(jet_index); 
   double pu = buffer.jet_flavor_component_jfitc_pu->at(jet_index); 
+
+  if (std::abs(jet.Eta()) > 2.5) return false; 
 
   // medium tag values are defined in ctag_defs.hh
   if (log(pc / pu) < JFC_MEDIUM_ANTI_U_CUT) return false; 
