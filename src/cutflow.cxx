@@ -43,10 +43,10 @@ public:
 struct SelectionObjects 
 {
   std::vector<IdLorentzVector> veto_jets; 
-  std::vector<IdLorentzVector> veto_electrons; 
-  std::vector<IdLorentzVector> veto_muons; 
-  std::vector<IdLorentzVector> control_electrons; 
-  std::vector<IdLorentzVector> control_muons; 
+  std::vector<IdLorentzVector> after_overlap_el;
+  std::vector<IdLorentzVector> after_overlap_mu;
+  std::vector<IdLorentzVector> signal_electrons; 
+  std::vector<IdLorentzVector> signal_muons; 
   std::vector<IdLorentzVector> signal_jets; 
   TVector2 met; 
 
@@ -60,6 +60,8 @@ struct SelectionObjects
   bool has_bad_tile;
   bool has_trigger_matched_muon; 
   bool has_trigger_matched_electron; 
+  bool has_dilep_trigger_matched_muon; 
+  bool has_dilep_trigger_matched_electron; 
   double energy_weighted_time; 
 }; 
 
@@ -126,6 +128,11 @@ bool has_trigger_matched_electron(const std::vector<IdLorentzVector>& el,
 bool has_trigger_matched_muon(const std::vector<IdLorentzVector>& mu, 
 			      const SusyBuffer& buffer, 
 			      SUSYObjDef& def); 
+bool has_dilep_trigger_matched_electron(const std::vector<IdLorentzVector>&, 
+					const SusyBuffer& buffer); 
+bool has_dilep_trigger_matched_muon(const std::vector<IdLorentzVector>& mu, 
+				    const SusyBuffer& buffer, 
+				    SUSYObjDef& def); 
 
 // IO functions
 void dump_counts(const CutCounter&, std::string); 
@@ -269,7 +276,7 @@ int main (int narg, const char* argv[]) {
 	buffer.el_nPixHits              ->at(eli),
 	buffer.el_nSCTHits              ->at(eli),
 	buffer.el_MET_Egamma10NoTau_wet->at(eli).at(0), 
-	10e3,			// et cut
+	7e3,			// et cut
 	2.47);
       TLorentzVector el_tlv = def->GetElecTLV(); 
       IdLorentzVector electron; 
@@ -303,7 +310,7 @@ int main (int narg, const char* argv[]) {
 	 buffer.mu_staco_nSCTHoles                    ->at(mui),
 	 buffer.mu_staco_nTRTHits                     ->at(mui),
 	 buffer.mu_staco_nTRTOutliers                 ->at(mui),
-	 10e3, 
+	 6e3, 
 	 2.4);
       TLorentzVector muon_tlv = def->GetMuonTLV(mui); 
       IdLorentzVector muon; 
@@ -332,43 +339,23 @@ int main (int narg, const char* argv[]) {
     counter["preselected_mu"] += preselected_mu.size(); 
 
     // ---- overlap removal ------
-    std::vector<IdLorentzVector> after_overlap_jets = remove_overlaping(
-      preselected_el, preselected_jets, 0.2); 
-    std::vector<IdLorentzVector> after_overlap_el = remove_overlaping(
-      after_overlap_jets, preselected_el, 0.4); 
-    std::vector<IdLorentzVector> after_overlap_mu = remove_overlaping(
-      after_overlap_jets, preselected_mu, 0.4); 
-    counter["after_overlap_jets"] += after_overlap_jets.size(); 
-    counter["after_overlap_el"]   += after_overlap_el.size(); 
-    counter["after_overlap_mu"]   += after_overlap_mu.size(); 
-
-    // ---- veto object selection -----
     // selection objects are used in various cutflows
     SelectionObjects so; 
+    std::vector<IdLorentzVector> after_overlap_jets = remove_overlaping(
+      preselected_el, preselected_jets, 0.2); 
+    so.after_overlap_el = remove_overlaping(
+      after_overlap_jets, preselected_el, 0.4); 
+    so.after_overlap_mu = remove_overlaping(
+      after_overlap_jets, preselected_mu, 0.4); 
+    counter["after_overlap_jets"] += after_overlap_jets.size(); 
+    counter["after_overlap_el"]   += so.after_overlap_el.size(); 
+    counter["after_overlap_mu"]   += so.after_overlap_mu.size(); 
+
+    // ---- veto object selection -----
     so.is_data = is_data; 
     so.veto_jets = filter_fail(after_overlap_jets); 
-    for (std::vector<IdLorentzVector>::const_iterator 
-	   itr = after_overlap_el.begin(); 
-	 itr != after_overlap_el.end(); itr++) { 
-      //float rel_isolation = (
-      //buffer.el_ptcone20->at(itr->index) / itr->Pt()); 
-      //bool isolated_el = rel_isolation < 0.1; 
-      //if (isolated_el) {
-      so.veto_electrons.push_back(*itr); 
-      //}
-    }
-    for (std::vector<IdLorentzVector>::const_iterator
-	   itr = after_overlap_mu.begin(); 
-	 itr != after_overlap_mu.end(); itr++) { 
-      //float isolation = buffer.mu_staco_ptcone20->at(itr->index); 
-      //bool isolated_mu = isolation < 1.8e3; 
-      //if (isolated_mu) { 
-      so.veto_muons.push_back(*itr); 
-      //}
-    }
+
     counter["veto_jets"] += so.veto_jets.size(); 
-    counter["veto_electrons"] += so.veto_electrons.size(); 
-    counter["veto_muons"] += so.veto_muons.size(); 
 
     // ---- signal object selection -----
     std::vector<IdLorentzVector> good_jets = filter_pass(after_overlap_jets);
@@ -392,25 +379,28 @@ int main (int narg, const char* argv[]) {
     }
     
     for (std::vector<IdLorentzVector>::const_iterator
-	   itr = so.veto_electrons.begin(); 
-	 itr != so.veto_electrons.end(); itr++) { 
-      bool control_pt = itr->Pt() > 10e3; 
-      if (control_pt) { 
-	so.control_electrons.push_back(*itr); 
+	   itr = so.after_overlap_el.begin(); 
+	 itr != so.after_overlap_el.end(); itr++) { 
+      bool control_pt = itr->Pt() > 25e3; 
+      bool tight_pp = buffer.el_tightPP->at(itr->index);
+      bool rel_iso = buffer.el_ptcone20->at(itr->index) / itr->Pt() < 0.1;
+      if (control_pt && tight_pp && rel_iso) { 
+	so.signal_electrons.push_back(*itr); 
       }
     }
     for (std::vector<IdLorentzVector>::const_iterator
-	   itr = so.veto_muons.begin(); 
-	 itr != so.veto_muons.end(); itr++) { 
-      bool control_pt = itr->Pt() > 10e3; 
-      if (control_pt) { 
-	so.control_muons.push_back(*itr); 
+	   itr = so.after_overlap_mu.begin(); 
+	 itr != so.after_overlap_mu.end(); itr++) { 
+      bool control_pt = itr->Pt() > 20e3; 
+      bool iso = buffer.mu_staco_ptcone20->at(itr->index) < 1.8e3;
+      if (control_pt && iso) { 
+	so.signal_muons.push_back(*itr); 
       }
     }
     counter["good_jets"] += good_jets.size(); 
     counter["signal_jets"] += so.signal_jets.size(); 
-    counter["control_electrons"] += so.control_electrons.size(); 
-    counter["control_muons"] += so.control_muons.size(); 
+    counter["signal_electrons"] += so.signal_electrons.size(); 
+    counter["signal_muons"] += so.signal_muons.size(); 
 
     // --- calculate met ----
     std::vector<int> preselected_mu_idx; 
@@ -451,17 +441,17 @@ int main (int narg, const char* argv[]) {
       buffer.mu_staco_energyLossPar,
       buffer.averageIntPerXing); 
     so.mu_met = so.met; 
-    if (so.control_muons.size() == 1) { 
+    if (so.signal_muons.size() == 1) { 
       TLorentzVector met_4vec; 
       met_4vec.SetPtEtaPhiE(so.met.Mod(), 0, so.met.Phi(), so.met.Mod()); 
-      met_4vec += so.control_muons.at(0); 
+      met_4vec += so.signal_muons.at(0); 
       so.mu_met.Set(met_4vec.Px(), met_4vec.Py()); 
     }
-    if (so.control_electrons.size() == 1) { 
+    if (so.signal_electrons.size() == 1) { 
       float min_delta_r = 10; 
       for (std::vector<IdLorentzVector>::const_iterator 
 	     itr = all_jets.begin(); itr != all_jets.end(); itr++) {
-	float delta_r = so.control_electrons.at(0).DeltaR(*itr); 
+	float delta_r = so.signal_electrons.at(0).DeltaR(*itr); 
 	if (delta_r < min_delta_r) { 
 	  so.electron_jet = *itr; 
 	  min_delta_r = delta_r; 
@@ -479,8 +469,8 @@ int main (int narg, const char* argv[]) {
     // --- muon quality cuts ---
     so.has_cosmic_muon = false; 
     for (std::vector<IdLorentzVector>::const_iterator 
-	   itr = after_overlap_mu.begin(); 
-	 itr != after_overlap_mu.end(); itr++){ 
+	   itr = so.after_overlap_mu.begin(); 
+	 itr != so.after_overlap_mu.end(); itr++){ 
       float mu_z0_exPV = buffer.mu_staco_z0_exPV->at(itr->index); 
       float mu_d0_exPV = buffer.mu_staco_d0_exPV->at(itr->index); 
       if (def->IsCosmicMuon(mu_z0_exPV, mu_d0_exPV)) { 
@@ -510,9 +500,9 @@ int main (int narg, const char* argv[]) {
 
     // ---- trigger matching ----
     so.has_trigger_matched_muon = has_trigger_matched_muon(
-      so.control_muons, buffer, *def); 
+      so.signal_muons, buffer, *def); 
     so.has_trigger_matched_electron = has_trigger_matched_electron(
-      so.control_electrons, buffer); 
+      so.signal_electrons, buffer); 
 
     // ---- event weights ----
     double ctag_wt = 1; 
@@ -598,10 +588,8 @@ bool common_lepton_trigger_matching(const SelectionObjects& so,
 				    CutCounter& counter, 
 				    double weight) {
  
-  bool mu_trig = buffer.EF_mu18_tight_mu8_EFFS || buffer.EF_mu24i_tight ||
-    buffer.EF_mu36_tight; 
-  bool el_trig = buffer.EF_2e12Tvh_loose1 || buffer.EF_e24vhi_medium1 ||
-    buffer.EF_e60_medium1; 
+  bool mu_trig = buffer.EF_mu24i_tight || buffer.EF_mu36_tight; 
+  bool el_trig = buffer.EF_e24vhi_medium1 || buffer.EF_e60_medium1; 
   if (! (mu_trig || el_trig) ) return false; 
   counter["pass_lepton_trigger"] += weight; 
 
@@ -629,10 +617,10 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
 
-  if (so.veto_muons.size()) return; 
+  if (so.after_overlap_mu.size()) return; 
   counter["muon_veto"] += weight; 
 
-  if (so.veto_electrons.size()) return; 
+  if (so.after_overlap_el.size()) return; 
   counter["electron_veto"] += weight; 
 
   bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
@@ -698,13 +686,13 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
 
-  int total_leptons = so.control_electrons.size() + so.control_muons.size();
+  int total_leptons = so.signal_electrons.size() + so.signal_muons.size();
   if (total_leptons != 1) return; 
   counter["pass_1l"] += weight; 
   
   // control leptons are a subset of the veto leptons, so we shouldn't
   // have any additional veto leptons. 
-  int total_veto_leptons = so.veto_electrons.size() + so.veto_muons.size(); 
+  int total_veto_leptons = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
   if (total_veto_leptons != total_leptons) return; 
   counter["pass_lepton_veto"] += weight; 
 
@@ -747,8 +735,8 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (mass_ct < 150e3) return; 
   counter["m_ct_150"] += weight; 
 
-  TLorentzVector lep = so.control_muons.size() == 1 ? 
-    so.control_muons.at(0) : so.control_electrons.at(0); 
+  TLorentzVector lep = so.signal_muons.size() == 1 ? 
+    so.signal_muons.at(0) : so.signal_electrons.at(0); 
   double mt = get_mt(lep, so.met); 
   if (!(40e3 < mt && mt < 100e3)) return; 
   counter["mt"] += weight; 
@@ -760,30 +748,37 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
 		      double weight){
   counter["total"] += weight; 
 
-  bool pass_lepton_trigger = common_lepton_trigger_matching(
-    so, buffer, counter, weight); 
+  bool pass_mu = buffer.EF_mu18_tight_mu8_EFFS;
+  bool pass_el = buffer.EF_2e12Tvh_loose1;
+  bool pass_lepton_trigger = pass_el || pass_mu;
   if (!pass_lepton_trigger) return; 
+  counter["pass_two_lepton_trig"] += weight;
+
+  bool trig_matched = so.has_dilep_trigger_matched_muon ||
+    so.has_dilep_trigger_matched_electron;
+  if (!trig_matched) return;
+  counter["pass_trigger_match"] += weight;
     
   bool pass_preselection = common_preselection(
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
 
-  int n_el = so.control_electrons.size();
-  int n_mu = so.control_muons.size();
+  int n_el = so.signal_electrons.size();
+  int n_mu = so.signal_muons.size();
   int total_leptons = n_mu + n_el; 
   bool ossf_pair = has_os_sf_pair(
-    so.control_electrons, so.control_muons, buffer); 
+    so.signal_electrons, so.signal_muons, buffer); 
   if (!ossf_pair) return; 
   counter["pass_ossf"] += weight; 
   
   IdLorentzVector lep1 = n_mu == 2 ? 
-    so.control_muons.at(0) : so.control_electrons.at(0); 
+    so.signal_muons.at(0) : so.signal_electrons.at(0); 
   IdLorentzVector lep2 = n_mu == 2 ? 
-    so.control_muons.at(1) : so.control_electrons.at(1); 
+    so.signal_muons.at(1) : so.signal_electrons.at(1); 
   
   // control leptons are a subset of the veto leptons, so we shouldn't
   // have any additional veto leptons. 
-  int total_veto_leptons = so.veto_electrons.size() + so.veto_muons.size(); 
+  int total_veto_leptons = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
   if (total_veto_leptons != total_leptons) return; 
   counter["pass_lepton_veto"] += weight; 
 
@@ -851,15 +846,15 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (!pass_preselection) return; 
 
   bool ofos_pair = has_os_of_pair(
-    so.control_electrons, so.control_muons, buffer); 
+    so.signal_electrons, so.signal_muons, buffer); 
 
   if (!ofos_pair) return; 
   counter["pass_ofos"] += weight; 
   
   // control leptons are a subset of the veto leptons, so we shouldn't
   // have any additional veto leptons. 
-  int total_leptons = so.control_electrons.size() + so.control_muons.size();
-  int total_veto_leptons = so.veto_electrons.size() + so.veto_muons.size(); 
+  int total_leptons = so.signal_electrons.size() + so.signal_muons.size();
+  int total_veto_leptons = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
   if (total_veto_leptons != total_leptons) return; 
   counter["pass_lepton_veto"] += weight; 
 
@@ -902,7 +897,7 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (mass_ct < 75e3) return; 
   counter["m_ct_75"] += weight; 
 
-  double mll = (so.control_electrons.at(0) + so.control_muons.at(0)).M(); 
+  double mll = (so.signal_electrons.at(0) + so.signal_muons.at(0)).M(); 
   if (mll < 50) return; 
   counter["mll"] += weight; 
   
@@ -1078,7 +1073,7 @@ bool has_trigger_matched_electron(const std::vector<IdLorentzVector>& el,
 				  const SusyBuffer& buffer) { 
   for (std::vector<IdLorentzVector>::const_iterator itr = el.begin(); 
        itr != el.end(); itr++) { 
-    
+    if (itr->Pt() < 25e3) continue; // trigger threshold from sbottom
     int nothing; 
     if (PassedTriggerEF(
       itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e24vhi_medium1, 
@@ -1088,6 +1083,16 @@ bool has_trigger_matched_electron(const std::vector<IdLorentzVector>& el,
       itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e60_medium1, 
       nothing, buffer.trig_EF_el_eta->size(), 
       buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
+  }
+  return false; 
+}
+bool has_dilep_trigger_matched_electron(
+  const std::vector<IdLorentzVector>& el, 
+  const SusyBuffer& buffer) { 
+  for (std::vector<IdLorentzVector>::const_iterator itr = el.begin(); 
+       itr != el.end(); itr++) { 
+    if (itr->Pt() < 25e3) continue; // trigger threshold from sbottom
+    int nothing; 
     if (PassedTriggerEF(
       itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_2e12Tvh_loose1, 
       nothing, buffer.trig_EF_el_eta->size(), 
@@ -1100,15 +1105,8 @@ bool has_trigger_matched_muon(const std::vector<IdLorentzVector>& mu,
 			      SUSYObjDef& def) { 
   for (std::vector<IdLorentzVector>::const_iterator itr = mu.begin(); 
        itr != mu.end(); itr++) { 
+    if (itr->Pt() < 25e3) continue; // trigger threshold from sbottom
     int nothing; 
-    if (def.MuonHasTriggerMatch(
-	  itr->Eta(), itr->Phi(), 
-	  buffer.trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS, 
-	  nothing, nothing, 
-	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
-	  buffer.trig_EF_trigmuonef_track_CB_eta, 
-	  buffer.trig_EF_trigmuonef_track_CB_phi, 
-	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
     if (def.MuonHasTriggerMatch(
 	  itr->Eta(), itr->Phi(), 
 	  buffer.trig_EF_trigmuonef_EF_mu24i_tight, 
@@ -1120,6 +1118,24 @@ bool has_trigger_matched_muon(const std::vector<IdLorentzVector>& mu,
     if (def.MuonHasTriggerMatch(
 	  itr->Eta(), itr->Phi(), 
 	  buffer.trig_EF_trigmuonef_EF_mu36_tight, 
+	  nothing, nothing, 
+	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
+	  buffer.trig_EF_trigmuonef_track_CB_eta, 
+	  buffer.trig_EF_trigmuonef_track_CB_phi, 
+	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
+  }
+  return false; 
+}
+bool has_dilep_trigger_matched_muon(const std::vector<IdLorentzVector>& mu, 
+				    const SusyBuffer& buffer, 
+				    SUSYObjDef& def) { 
+  for (std::vector<IdLorentzVector>::const_iterator itr = mu.begin(); 
+       itr != mu.end(); itr++) { 
+    if (itr->Pt() < 20e3) continue; // trigger threshold from sbottom
+    int nothing; 
+    if (def.MuonHasTriggerMatch(
+	  itr->Eta(), itr->Phi(), 
+	  buffer.trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS, 
 	  nothing, nothing, 
 	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
 	  buffer.trig_EF_trigmuonef_track_CB_eta, 
