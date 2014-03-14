@@ -394,7 +394,7 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.veto_electrons.begin(); 
 	 itr != so.veto_electrons.end(); itr++) { 
-      bool control_pt = itr->Pt() > 20e3; 
+      bool control_pt = itr->Pt() > 10e3; 
       if (control_pt) { 
 	so.control_electrons.push_back(*itr); 
       }
