@@ -187,7 +187,7 @@ int main (int narg, const char* argv[]) {
   CutCounter cra_of_counter; 
 
   // const long long max_entries = 10LL; 
-  const long long max_entries = 100000000LL; 
+  const long long max_entries = 100000LL; 
   const unsigned n_entries = std::min(chain->GetEntries(),max_entries); 
   printf("looping over %i entries\n", n_entries); 
   for (unsigned nnn = 0; nnn < n_entries; nnn++) {
@@ -867,15 +867,15 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (clean_for_chf) return; 
   counter["pass_chf"] += weight; 
     
-  if (so.met.Mod() < 100e3) return; 
-  counter["met_100"] += weight; 
+  if (so.met.Mod() < 50e3) return; 
+  counter["met_50"] += weight; 
 
   const size_t n_jets = 2; 
   if (so.signal_jets.size() < n_jets) return; 
   counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
   
-  if (so.signal_jets.at(0).Pt() < 130e3) return; 
-  counter["leading_jet_130"] += weight; 
+  if (so.signal_jets.at(0).Pt() < 50e3) return; 
+  counter["leading_jet_50"] += weight; 
 
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
