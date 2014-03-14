@@ -4,7 +4,8 @@
 #include "SmartChain.hh"
 
 SusyBuffer::SusyBuffer(SmartChain *fChain): 
-  m_is_data(false)
+  m_is_data(false), 
+  m_has_mcevt_weight(true)
 {
 
   std::string jc = "jet_AntiKt4LCTopo"; 
@@ -227,6 +228,13 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
 
 bool SusyBuffer::is_data() const { return m_is_data;} 
 
+double SusyBuffer::get_mcevt_weight() const { 
+  if (m_has_mcevt_weight) { 
+    return mcevt_weight->at(0).at(0);
+  }
+  return skimmed_mcevt_weight;
+}
+
 void SusyBuffer::set_mc_branches(SmartChain* chain, 
 				 std::string jc)
 {
@@ -237,8 +245,12 @@ void SusyBuffer::set_mc_branches(SmartChain* chain,
   //chain->SetBranch("mc_event_weight", &mc_event_weight); 
 
   // we can't use the mc_event_weight with sherpa tag 
-  chain->SetBranch("mcevt_weight", &mcevt_weight); 
-
+  try { 
+    chain->SetBranch("mcevt_weight", &mcevt_weight); 
+  } catch (const MissingBranchError& err) { 
+    chain->SetBranch("skimmed_mcevt_weight", &skimmed_mcevt_weight); 
+    m_has_mcevt_weight = false;
+  }
   // ACHTUNG: I thought these were needed for the boson pt filter
   //chain->SetBranch("mc_n", &mc_n); 
   //chain->SetBranch("mc_pt", &mc_pt); 
@@ -248,11 +260,11 @@ void SusyBuffer::set_mc_branches(SmartChain* chain,
   //chain->SetBranch("mc_status", &mc_status); 
   //chain->SetBranch("mc_pdgId", &mc_pdgId); 
 
-  chain->SetBranch("MET_Truth_NonInt_etx", &MET_Truth_NonInt_etx); 
-  chain->SetBranch("MET_Truth_NonInt_ety", &MET_Truth_NonInt_ety);
+  // chain->SetBranch("MET_Truth_NonInt_etx", &MET_Truth_NonInt_etx); 
+  // chain->SetBranch("MET_Truth_NonInt_ety", &MET_Truth_NonInt_ety);
 
-  chain->SetBranch("SUSY_Spart1_pdgId", &spart1_pdgid); 
-  chain->SetBranch("SUSY_Spart2_pdgId", &spart2_pdgid); 
+  // chain->SetBranch("SUSY_Spart1_pdgId", &spart1_pdgid); 
+  // chain->SetBranch("SUSY_Spart2_pdgId", &spart2_pdgid); 
 }
 
 

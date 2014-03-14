@@ -528,7 +528,7 @@ int main (int narg, const char* argv[]) {
     // ---- run the event-wise selections -----
     signal_selection(so, def, buffer, signal_counter); 
     signal_selection(so, def, buffer, signal_counter_mc_wt, 
-		     buffer.mcevt_weight->at(0).at(0)); 
+		     buffer.get_mcevt_weight()); 
     signal_selection(so, def, buffer, signal_counter_ctag_wt, ctag_wt); 
     cra_1l_selection(so, def, buffer, cra_1l_counter); 
     cra_sf_selection(so, def, buffer, cra_sf_counter); 

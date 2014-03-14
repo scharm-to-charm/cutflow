@@ -55,10 +55,7 @@ public :
   int hfor_type; 
   int spart1_pdgid; 
   int spart2_pdgid; 
-  // float mc_event_weight; 
 
-  // hack for sherpa bug
-  std::vector<std::vector<double> >* mcevt_weight; 
 
   // needed for boson filter
   int mc_n; 
@@ -201,10 +198,18 @@ public :
 
   SusyBuffer(SmartChain *tree); 
   bool is_data() const; 
+  // Dan's skim doesn't include the standard mcevt_weight
+  double get_mcevt_weight() const; 
 
 private: 
+  // made these things private because Dan's skim uses a different branch
+  // hack for sherpa bug
+  std::vector<std::vector<double> >* mcevt_weight; 
+  float skimmed_mcevt_weight; 	// for dan's skim
+
   void set_mc_branches(SmartChain* chain, std::string jc); 
   bool m_is_data; 
+  bool m_has_mcevt_weight;
 };
 
 #endif
