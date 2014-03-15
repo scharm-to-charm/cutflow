@@ -495,14 +495,19 @@ int main (int narg, const char* argv[]) {
     so.has_bad_tile = has_bad_tile(preselected_jets, so.met, buffer); 
     
     // ---- energy weighted time ----
-    so.energy_weighted_time = energy_weighted_time(so.signal_jets, 2, buffer); // 2 jets in SRA-type regions
+    // 2 jets in SRA-type regions
+    so.energy_weighted_time = energy_weighted_time(so.signal_jets, 2, buffer);
     //preselected, after_overlap, good, signal
 
     // ---- trigger matching ----
     so.has_trigger_matched_muon = has_trigger_matched_muon(
       so.signal_muons, buffer, *def); 
+    so.has_dilep_trigger_matched_muon = has_dilep_trigger_matched_muon(
+      so.signal_muons, buffer, *def);
     so.has_trigger_matched_electron = has_trigger_matched_electron(
       so.signal_electrons, buffer); 
+    so.has_dilep_trigger_matched_electron = has_dilep_trigger_matched_electron(
+      so.signal_electrons, buffer);
 
     // ---- event weights ----
     double ctag_wt = 1; 
@@ -568,7 +573,8 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   if(has_lar_error && so.is_data) return false; 
   counter["lar_error"] += weight; 
     
-  if (abs(so.energy_weighted_time) > 5) return false; // 0L has >4, sbottoms had >5
+  // 0L has >4, sbottoms had >5
+  if (std::abs(so.energy_weighted_time) > 5) return false; 
   counter["energy_weighted_time"] += weight;
 
   if (buffer.coreFlags & 0x40000 && so.is_data) return false; 
@@ -805,10 +811,6 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
     if (so.signal_jets.at(2).Pt() > 50e3) return;
   }
   counter["third_jet_veto50"] += weight; 
-
-  double min_dphi = get_min_dphi(so.signal_jets, so.met); 
-  if (min_dphi < 0.4) return; 
-  counter["dphi_jetmet_min"] += weight; 
 
   bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
   bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
