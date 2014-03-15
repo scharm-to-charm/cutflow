@@ -194,7 +194,7 @@ int main (int narg, const char* argv[]) {
   CutCounter cra_of_counter; 
 
   // const long long max_entries = 10LL; 
-  const long long max_entries = 100000LL; 
+  const long long max_entries = 10000LL; 
   const unsigned n_entries = std::min(chain->GetEntries(),max_entries); 
   printf("looping over %i entries\n", n_entries); 
   for (unsigned nnn = 0; nnn < n_entries; nnn++) {
@@ -600,7 +600,7 @@ bool common_lepton_trigger_matching(const SelectionObjects& so,
   counter["pass_lepton_trigger"] += weight; 
 
   if (! ( (so.has_trigger_matched_electron && el_trig) || 
-	  (so.has_trigger_matched_muon && mu_trig ) ) ) return false; 
+  	  (so.has_trigger_matched_muon && mu_trig ) ) ) return false; 
   counter["pass_lepton_trigger_match"] += weight; 
   
   return true; 
@@ -1057,19 +1057,19 @@ std::vector<size_t> get_indices(const std::vector<IdLorentzVector>& vecs) {
 // ================= trigger matching =================
 // trigger match checks 
 bool has_trigger_matched_electron(const std::vector<IdLorentzVector>& el, 
-				  const SusyBuffer& buffer) { 
+                                  const SusyBuffer& buffer) { 
   for (std::vector<IdLorentzVector>::const_iterator itr = el.begin(); 
        itr != el.end(); itr++) { 
     if (itr->Pt() < 25e3) continue; // trigger threshold from sbottom
     int nothing; 
     if (PassedTriggerEF(
-      itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e24vhi_medium1, 
-      nothing, buffer.trig_EF_el_eta->size(), 
-      buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
+	  itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e24vhi_medium1, 
+	  nothing, buffer.trig_EF_el_eta->size(), 
+	  buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
     if (PassedTriggerEF(
-      itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e60_medium1, 
-      nothing, buffer.trig_EF_el_eta->size(), 
-      buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
+	  itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_e60_medium1, 
+	  nothing, buffer.trig_EF_el_eta->size(),  
+	  buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
   }
   return false; 
 }
@@ -1081,53 +1081,53 @@ bool has_dilep_trigger_matched_electron(
     if (itr->Pt() < 25e3) continue; // trigger threshold from sbottom
     int nothing; 
     if (PassedTriggerEF(
-      itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_2e12Tvh_loose1, 
-      nothing, buffer.trig_EF_el_eta->size(), 
-      buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
+	  itr->Eta(), itr->Phi(), buffer.trig_EF_el_EF_2e12Tvh_loose1, 
+	  nothing, buffer.trig_EF_el_eta->size(), 
+	  buffer.trig_EF_el_eta, buffer.trig_EF_el_phi)) return true; 
   }
   return false; 
 }
 bool has_trigger_matched_muon(const std::vector<IdLorentzVector>& mu, 
-			      const SusyBuffer& buffer, 
-			      SUSYObjDef& def) { 
+                              const SusyBuffer& buffer, 
+                              SUSYObjDef& def) { 
   for (std::vector<IdLorentzVector>::const_iterator itr = mu.begin(); 
        itr != mu.end(); itr++) { 
     if (itr->Pt() < 25e3) continue; // trigger threshold from sbottom
     int nothing; 
     if (def.MuonHasTriggerMatch(
-	  itr->Eta(), itr->Phi(), 
-	  buffer.trig_EF_trigmuonef_EF_mu24i_tight, 
-	  nothing, nothing, 
-	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
-	  buffer.trig_EF_trigmuonef_track_CB_eta, 
-	  buffer.trig_EF_trigmuonef_track_CB_phi, 
-	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
+          itr->Eta(), itr->Phi(), 
+          buffer.trig_EF_trigmuonef_EF_mu24i_tight, 
+          nothing, nothing, 
+          buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
+          buffer.trig_EF_trigmuonef_track_CB_eta, 
+          buffer.trig_EF_trigmuonef_track_CB_phi, 
+          buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
     if (def.MuonHasTriggerMatch(
-	  itr->Eta(), itr->Phi(), 
-	  buffer.trig_EF_trigmuonef_EF_mu36_tight, 
-	  nothing, nothing, 
-	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
-	  buffer.trig_EF_trigmuonef_track_CB_eta, 
-	  buffer.trig_EF_trigmuonef_track_CB_phi, 
-	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
+          itr->Eta(), itr->Phi(), 
+          buffer.trig_EF_trigmuonef_EF_mu36_tight, 
+          nothing, nothing, 
+          buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
+          buffer.trig_EF_trigmuonef_track_CB_eta, 
+          buffer.trig_EF_trigmuonef_track_CB_phi, 
+          buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
   }
   return false; 
 }
 bool has_dilep_trigger_matched_muon(const std::vector<IdLorentzVector>& mu, 
-				    const SusyBuffer& buffer, 
-				    SUSYObjDef& def) { 
+                                    const SusyBuffer& buffer, 
+                                    SUSYObjDef& def) { 
   for (std::vector<IdLorentzVector>::const_iterator itr = mu.begin(); 
        itr != mu.end(); itr++) { 
     if (itr->Pt() < 20e3) continue; // trigger threshold from sbottom
     int nothing; 
     if (def.MuonHasTriggerMatch(
-	  itr->Eta(), itr->Phi(), 
-	  buffer.trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS, 
-	  nothing, nothing, 
-	  buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
-	  buffer.trig_EF_trigmuonef_track_CB_eta, 
-	  buffer.trig_EF_trigmuonef_track_CB_phi, 
-	  buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
+          itr->Eta(), itr->Phi(), 
+          buffer.trig_EF_trigmuonef_EF_mu18_tight_mu8_EFFS, 
+          nothing, nothing, 
+          buffer.trig_EF_trigmuonef_track_CB_eta->size(), 
+          buffer.trig_EF_trigmuonef_track_CB_eta, 
+          buffer.trig_EF_trigmuonef_track_CB_phi, 
+          buffer.trig_EF_trigmuonef_track_CB_hasCB)) return true; 
   }
   return false; 
 }
