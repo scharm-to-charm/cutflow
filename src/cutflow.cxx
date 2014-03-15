@@ -719,11 +719,6 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
 
-  if (so.signal_jets.size() > 2) {
-    if (so.signal_jets.at(2).Pt() > 50e3) return;
-  }
-  counter["third_jet_veto50"] += weight; 
-
   double min_dphi = get_min_dphi(so.signal_jets, so.met); 
   if (min_dphi < 0.4) return; 
   counter["dphi_jetmet_min"] += weight; 
@@ -807,11 +802,6 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
 
-  if (so.signal_jets.size() > 2) {
-    if (so.signal_jets.at(2).Pt() > 50e3) return;
-  }
-  counter["third_jet_veto50"] += weight; 
-
   bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
   bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
 
@@ -876,11 +866,6 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
 
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
-
-  if (so.signal_jets.size() > 2) {
-    if (so.signal_jets.at(2).Pt() > 50e3) return;
-  }
-  counter["third_jet_veto50"] += weight; 
 
   double min_dphi = get_min_dphi(so.signal_jets, so.met); 
   if (min_dphi < 0.4) return; 
