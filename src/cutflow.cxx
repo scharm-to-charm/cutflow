@@ -381,7 +381,7 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.after_overlap_el.begin(); 
 	 itr != so.after_overlap_el.end(); itr++) { 
-      bool control_pt = itr->Pt() > 25e3; 
+      bool control_pt = itr->Pt() > 20e3; 
       bool tight_pp = buffer.el_tightPP->at(itr->index);
       bool rel_iso = buffer.el_ptcone20->at(itr->index) / itr->Pt() < 0.1;
       if (control_pt && tight_pp && rel_iso) { 
