@@ -787,8 +787,8 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (clean_for_chf) return; 
   counter["pass_chf"] += weight; 
     
-  TVector2 lept_met = n_mu == 2 ? 
-    so.met + lep1.Vect().XYvector() + lep2.Vect().XYvector() : so.met; 
+  TVector2 lept_pxy = lep1.Vect().XYvector() + lep2.Vect().XYvector();
+  TVector2 lept_met = so.met + lept_pxy;
   if (lept_met.Mod() < 100e3) return; 
   counter["met_100"] += weight; 
 
@@ -796,7 +796,7 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.size() < n_jets) return; 
   counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
   
-  if (so.signal_jets.at(0).Pt() < 130e3) return; 
+  if (so.signal_jets.at(0).Pt() < 50e3) return; 
   counter["leading_jet_50"] += weight; 
 
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
@@ -815,8 +815,8 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   counter["mll_zpeak"] += weight; 
 
   double lepton_pt = std::max(lep1.Pt(), lep2.Pt()); 
-  if (! lepton_pt > 90e3) return; 
-  counter["lepton_pt_90"] += weight; 
+  if (! lepton_pt > 70e3) return; 
+  counter["lepton_pt_70"] += weight; 
 
   double mass_cc = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
   if (mass_cc < 200e3) return; 
