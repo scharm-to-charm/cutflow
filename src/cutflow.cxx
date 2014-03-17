@@ -103,7 +103,7 @@ bool has_os_of_pair(const std::vector<IdLorentzVector>& electrons,
 // m_ct function 
 double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2); 
 double get_mctcorr(const TLorentzVector& v1, const TLorentzVector& v2, 
-		   const TVector2& vmet);
+		   const TLorentzVector& vds, const TVector2& vmet);
 double get_mt(const TLorentzVector& lep, const TVector2& met); 
 
 // delta phi between jets and met
@@ -669,7 +669,9 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 
 
   double mass_ct = get_mctcorr(so.signal_jets.at(0), 
-			       so.signal_jets.at(1), so.met); 
+			       so.signal_jets.at(1), 
+			       TLorentzVector(),
+			       so.met); 
   if (mass_ct < 150e3) return; 
   counter["m_ct_150"] += weight; 
 
@@ -731,13 +733,13 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (! (medium_first && medium_second) ) return; 
   counter["two_ctag"] += weight; 
 
+  TLorentzVector lep = so.signal_muons.size() == 1 ? 
+    so.signal_muons.at(0) : so.signal_electrons.at(0); 
   double mass_ct = get_mctcorr(so.signal_jets.at(0), 
-			       so.signal_jets.at(1), so.met); 
+			       so.signal_jets.at(1), lep, so.met); 
   if (mass_ct < 150e3) return; 
   counter["m_ct_150"] += weight; 
 
-  TLorentzVector lep = so.signal_muons.size() == 1 ? 
-    so.signal_muons.at(0) : so.signal_electrons.at(0); 
   double mt = get_mt(lep, so.met); 
   if (!(40e3 < mt && mt < 100e3)) return; 
   counter["mt"] += weight; 
@@ -879,12 +881,15 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (! (medium_first && medium_second) ) return; 
   counter["two_ctag"] += weight; 
 
+  TLorentzVector sum_lept = so.signal_electrons.at(0) + so.signal_muons.at(0);
   double mass_ct = get_mctcorr(so.signal_jets.at(0), 
-			       so.signal_jets.at(1), so.met); 
+			       so.signal_jets.at(1), 
+			       sum_lept,
+			       so.met); 
   if (mass_ct < 75e3) return; 
   counter["m_ct_75"] += weight; 
 
-  double mll = (so.signal_electrons.at(0) + so.signal_muons.at(0)).M(); 
+  double mll = sum_lept.M(); 
   if (mll < 50) return; 
   counter["mll"] += weight; 
   
@@ -1009,13 +1014,14 @@ double get_m_ct(const IdLorentzVector& v1, const IdLorentzVector& v2) {
 }
 
 double get_mctcorr(const TLorentzVector& tv1, const TLorentzVector& tv2, 
+		   const TLorentzVector& tvd, 
 		   const TVector2& vmet)
 {
   mctlib mct_object;
   
-  double v1[4] = {tv1.E(), tv1.Px(), tv1.Py(), tv1.Pz()};
-  double v2[4] = {tv2.E(), tv2.Px(), tv2.Py(), tv2.Pz()};
-  double vds[4] = {0.0, 0.0, 0.0, 0.0};
+  double v1[4] =  {tv1.E(), tv1.Px(), tv1.Py(), tv1.Pz()};
+  double v2[4] =  {tv2.E(), tv2.Px(), tv2.Py(), tv2.Pz()};
+  double vds[4] = {tvd.E(), tvd.Px(), tvd.Py(), tvd.Pz()};
   double ptm[2] = {vmet.X(), vmet.Y()};
   return mct_object.mctcorr(v1, v2, vds, ptm, 8e6, 0.0);
 }
