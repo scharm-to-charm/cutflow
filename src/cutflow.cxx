@@ -194,7 +194,7 @@ int main (int narg, const char* argv[]) {
   CutCounter cra_of_counter; 
 
   // const long long max_entries = 10LL; 
-  const long long max_entries = 10000LL; 
+  const long long max_entries = 100000LL; 
   const unsigned n_entries = std::min(chain->GetEntries(),max_entries); 
   printf("looping over %i entries\n", n_entries); 
   for (unsigned nnn = 0; nnn < n_entries; nnn++) {
@@ -381,7 +381,7 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.after_overlap_el.begin(); 
 	 itr != so.after_overlap_el.end(); itr++) { 
-      bool control_pt = itr->Pt() > 20e3; 
+      bool control_pt = itr->Pt() > 20e3 || true; 
       bool tight_pp = buffer.el_tightPP->at(itr->index);
       bool rel_iso = buffer.el_ptcone20->at(itr->index) / itr->Pt() < 0.1;
       if (control_pt && tight_pp && rel_iso) { 
@@ -391,7 +391,7 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.after_overlap_mu.begin(); 
 	 itr != so.after_overlap_mu.end(); itr++) { 
-      bool control_pt = itr->Pt() > 20e3; 
+      bool control_pt = itr->Pt() > 20e3 || true; 
       bool iso = buffer.mu_staco_ptcone20->at(itr->index) < 1.8e3;
       if (control_pt && iso) { 
 	so.signal_muons.push_back(*itr); 
@@ -615,7 +615,8 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 		      double weight){
   counter["total"] += weight; 
     
-  bool met_trig = buffer.xe80_tclcw_tight || buffer.xe80T_tclcw_loose; 
+  bool met_trig = buffer.xe80_tclcw_tight || buffer.xe80T_tclcw_loose ||
+    buffer.xe80T_tclcw_loose; 
   if (!met_trig) return; 
   counter["met_trigger"] += weight; 
 
@@ -701,7 +702,7 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
   // control leptons are a subset of the veto leptons, so we shouldn't
   // have any additional veto leptons. 
   int total_veto_leptons = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
-  if (total_veto_leptons != total_leptons) return; 
+  if (total_veto_leptons != 1) return; 
   counter["pass_lepton_veto"] += weight; 
 
   bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
@@ -720,10 +721,6 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
 
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
-
-  double min_dphi = get_min_dphi(so.signal_jets, so.met); 
-  if (min_dphi < 0.4) return; 
-  counter["dphi_jetmet_min"] += weight; 
 
   bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
   bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
@@ -778,11 +775,13 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
     so.signal_muons.at(0) : so.signal_electrons.at(0); 
   IdLorentzVector lep2 = n_mu == 2 ? 
     so.signal_muons.at(1) : so.signal_electrons.at(1); 
-  
-  // control leptons are a subset of the veto leptons, so we shouldn't
-  // have any additional veto leptons. 
+
+  if (total_leptons != 2) return;
+  counter["pass_2_lepton"] += weight;
+
+  // signal leptons are a subset of the veto leptons
   int total_veto_leptons = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
-  if (total_veto_leptons != total_leptons) return; 
+  if (total_veto_leptons != 2) return; 
   counter["pass_lepton_veto"] += weight; 
 
   bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
@@ -869,10 +868,6 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
 
-  double min_dphi = get_min_dphi(so.signal_jets, so.met); 
-  if (min_dphi < 0.4) return; 
-  counter["dphi_jetmet_min"] += weight; 
-
   bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
   bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
 
@@ -882,15 +877,8 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
   counter["two_ctag"] += weight; 
 
   TLorentzVector sum_lept = so.signal_electrons.at(0) + so.signal_muons.at(0);
-  double mass_ct = get_mctcorr(so.signal_jets.at(0), 
-			       so.signal_jets.at(1), 
-			       sum_lept,
-			       so.met); 
-  if (mass_ct < 75e3) return; 
-  counter["m_ct_75"] += weight; 
-
   double mll = sum_lept.M(); 
-  if (mll < 50) return; 
+  if (mll < 50e3) return; 
   counter["mll"] += weight; 
   
 } // end of cra_of_selection
