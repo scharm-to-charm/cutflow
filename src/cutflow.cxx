@@ -763,26 +763,21 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
 
-  int n_el = so.signal_electrons.size();
-  int n_mu = so.signal_muons.size();
-  int total_leptons = n_mu + n_el; 
   bool ossf_pair = has_os_sf_pair(
     so.signal_electrons, so.signal_muons, buffer); 
   if (!ossf_pair) return; 
   counter["pass_ossf"] += weight; 
   
+  // signal leptons are a subset of the veto leptons
+  int n_veto_lep = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
+  if (n_veto_lep != 2) return; 
+  counter["pass_lepton_veto"] += weight; 
+
+  int n_mu = so.signal_muons.size();
   IdLorentzVector lep1 = n_mu == 2 ? 
     so.signal_muons.at(0) : so.signal_electrons.at(0); 
   IdLorentzVector lep2 = n_mu == 2 ? 
     so.signal_muons.at(1) : so.signal_electrons.at(1); 
-
-  if (total_leptons != 2) return;
-  counter["pass_2_lepton"] += weight;
-
-  // signal leptons are a subset of the veto leptons
-  int total_veto_leptons = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
-  if (total_veto_leptons != 2) return; 
-  counter["pass_lepton_veto"] += weight; 
 
   bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
   if (clean_for_chf) return; 
@@ -816,7 +811,7 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
   counter["mll_zpeak"] += weight; 
 
   double lepton_pt = std::max(lep1.Pt(), lep2.Pt()); 
-  if (! lepton_pt > 70e3) return; 
+  if (! (lepton_pt > 70e3)) return; 
   counter["lepton_pt_70"] += weight; 
 
   double mass_cc = (so.signal_jets.at(0) + so.signal_jets.at(1)).M(); 
