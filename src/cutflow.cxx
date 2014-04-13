@@ -1146,6 +1146,9 @@ double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer,
   inputs.anti_b = log(pc / pb); 
   inputs.anti_u = log(pc / pu); 
   inputs.flavor = get_flavor(ftl); 
+  // the new CalibrationDataInterface will crash if we try to get a SF
+  // outside the calibrated acceptance (i.e. |eta| > 2.5).
+  if (std::fabs(inputs.eta) > 2.5) return 1.0;
   // dump(inputs); 
   return ctag_cal.scale_factor(inputs).nominal; 
 }
