@@ -163,7 +163,10 @@ int main (int narg, const char* argv[]) {
 
   // ------ initialize susytools here -----------------
   SUSYObjDef* def = new SUSYObjDef; 
-  def->initialize(is_data, true); // not data, atlfast
+  def->initialize(is_data, 
+		  true, // atlfast
+		  false, // mc12b
+		  true); // use lepton trigger 
   printf("initalized\n"); 
   Root::TGRLCollection* grl = 0; 
   if (is_data) { 
