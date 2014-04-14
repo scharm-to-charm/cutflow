@@ -78,6 +78,9 @@ CtagCalibration::CtagCalibration(std::string cdi_file, std::string env_file):
   // file to it.
   TEnv env(env_file.c_str());
   env.SetValue("File", cdi_file.c_str());
+  // NOTE: uncomment these lines to turn off out of bounds summary
+  // env.SetValue("OutOfBoundsEta", "Ignore");
+  // env.SetValue("OutOfBoundsOther", "Ignore");
   int error = env.WriteFile(env_file.c_str());
   if (error) throw std::runtime_error("couldn't save " + env_file);
   if (!exists(env_file)) throw std::runtime_error(
