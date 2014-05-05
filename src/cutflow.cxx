@@ -46,7 +46,11 @@ struct SelectionObjects
   std::vector<IdLorentzVector> after_overlap_el;
   std::vector<IdLorentzVector> after_overlap_mu;
   std::vector<IdLorentzVector> signal_electrons; 
+  std::vector<IdLorentzVector> signal_electrons_oldiso; 
+  std::vector<IdLorentzVector> signal_electrons_bothiso; 
   std::vector<IdLorentzVector> signal_muons; 
+  std::vector<IdLorentzVector> signal_muons_oldiso; 
+  std::vector<IdLorentzVector> signal_muons_bothiso; 
   std::vector<IdLorentzVector> signal_jets; 
   TVector2 met; 
 
@@ -381,29 +385,82 @@ int main (int narg, const char* argv[]) {
       }
     }
     
+    IsSignalElectronExpCutArgs myElectronArgs;
+    myElectronArgs.etcut(7e3); // 'baseline' pt cut
+    
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.after_overlap_el.begin(); 
 	 itr != so.after_overlap_el.end(); itr++) { 
+      
       bool control_pt = itr->Pt() > 20e3 || true; 
       bool tight_pp = buffer.el_tightPP->at(itr->index);
       bool rel_iso = buffer.el_ptcone20->at(itr->index) / itr->Pt() < 0.1;
-      if (control_pt && tight_pp && rel_iso) { 
+      if (control_pt && tight_pp && rel_iso) {
+	so.signal_electrons_oldiso.push_back(*itr); 
+      }
+	
+      int iel = itr->index;
+      bool signalElExp = def->IsSignalElectronExp(iel,
+						 buffer.el_tightPP->at(iel),
+						 buffer.vx_nTracks,
+						 buffer.el_ptcone30->at(iel),
+						 buffer.el_topoEtcone30_corrected->at(iel),
+						 buffer.el_trackIPEstimate_d0_unbiasedpvunbiased->at(iel),
+						 buffer.el_trackIPEstimate_z0_unbiasedpvunbiased->at(iel),
+						 buffer.el_trackIPEstimate_sigd0_unbiasedpvunbiased->at(iel),
+						 SignalIsoExp::TightIso,
+						 myElectronArgs);
+
+      if (signalElExp) {
 	so.signal_electrons.push_back(*itr); 
       }
+
+      if( signalElExp && control_pt && tight_pp && rel_iso) { 
+	so.signal_electrons_bothiso.push_back(*itr); 
+      }
     }
+
+    IsSignalMuonExpCutArgs myMuonArgs;
+    myMuonArgs.ptcut(6e3); // 'baseline' pt cut
+
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.after_overlap_mu.begin(); 
 	 itr != so.after_overlap_mu.end(); itr++) { 
       bool control_pt = itr->Pt() > 20e3 || true; 
       bool iso = buffer.mu_staco_ptcone20->at(itr->index) < 1.8e3;
       if (control_pt && iso) { 
+	so.signal_muons_oldiso.push_back(*itr); 
+      }
+
+
+      int imu = itr->index;
+      bool signalMuonExp = def->IsSignalMuonExp(imu,
+						buffer.vx_nTracks,
+						buffer.mu_staco_ptcone30_trkelstyle->at(imu),
+						buffer.mu_staco_etcone30->at(imu),
+						buffer.mu_staco_trackIPEstimate_d0_unbiasedpvunbiased->at(imu),
+						buffer.mu_staco_trackIPEstimate_z0_unbiasedpvunbiased->at(imu),
+						buffer.mu_staco_trackIPEstimate_sigd0_unbiasedpvunbiased->at(imu),
+						SignalIsoExp::TightIso,
+						myMuonArgs);
+
+      if (signalMuonExp) {
 	so.signal_muons.push_back(*itr); 
       }
+
+      if( signalMuonExp && iso && control_pt ) { 
+	so.signal_muons_bothiso.push_back(*itr); 
+      }
     }
+
     counter["good_jets"] += good_jets.size(); 
     counter["signal_jets"] += so.signal_jets.size(); 
     counter["signal_electrons"] += so.signal_electrons.size(); 
+    counter["signal_electrons_oldiso"] += so.signal_electrons_oldiso.size(); 
+    counter["signal_electrons_bothiso"] += so.signal_electrons_bothiso.size(); 
     counter["signal_muons"] += so.signal_muons.size(); 
+    counter["signal_muons_oldiso"] += so.signal_muons_oldiso.size(); 
+    counter["signal_muons_bothiso"] += so.signal_muons_bothiso.size(); 
 
     // --- calculate met ----
     std::vector<int> preselected_mu_idx; 
@@ -583,6 +640,10 @@ bool common_preselection(const SelectionObjects& so, SUSYObjDef* def,
   if (buffer.coreFlags & 0x40000 && so.is_data) return false; 
   counter["core_flags"] += weight; 
 
+  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
+  if (clean_for_chf) return false; 
+  counter["pass_chf"] += weight;
+
   if (so.has_cosmic_muon) return false; 
   counter["cosmic_muon_veto"] += weight; 
 
@@ -632,10 +693,6 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 
   if (so.after_overlap_el.size()) return; 
   counter["electron_veto"] += weight; 
-
-  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
-  if (clean_for_chf) return; 
-  counter["pass_chf"] += weight; 
     
   if (so.met.Mod() < 150e3) return; 
   counter["met_150"] += weight; 
@@ -650,10 +707,10 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(1).Pt() < 50e3) return; 
   counter["second_jet_50"] += weight; 
 
-  if (so.signal_jets.size() > 2) {
-    if (so.signal_jets.at(2).Pt() > 50e3) return;
-  }
-  counter["third_jet_veto50"] += weight; 
+  //if (so.signal_jets.size() > 2) {
+  //  if (so.signal_jets.at(2).Pt() > 50e3) return;
+  //}
+  //counter["third_jet_veto50"] += weight; 
 
   double min_dphi = get_min_dphi(so.signal_jets, so.met); 
   if (min_dphi < 0.4) return; 
@@ -707,10 +764,6 @@ void cra_1l_selection(const SelectionObjects& so, SUSYObjDef* def,
   int total_veto_leptons = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
   if (total_veto_leptons != 1) return; 
   counter["pass_lepton_veto"] += weight; 
-
-  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
-  if (clean_for_chf) return; 
-  counter["pass_chf"] += weight; 
     
   if (so.met.Mod() < 100e3) return; 
   counter["met_100"] += weight; 
@@ -781,10 +834,6 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
     so.signal_muons.at(0) : so.signal_electrons.at(0); 
   IdLorentzVector lep2 = n_mu == 2 ? 
     so.signal_muons.at(1) : so.signal_electrons.at(1); 
-
-  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
-  if (clean_for_chf) return; 
-  counter["pass_chf"] += weight; 
     
   TVector2 lept_pxy = lep1.Vect().XYvector() + lep2.Vect().XYvector();
   TVector2 lept_met = so.met + lept_pxy;
@@ -848,10 +897,6 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
     so.signal_electrons, so.signal_muons, buffer); 
   if (!ofos_pair) return; 
   counter["pass_ofos"] += weight; 
-
-  bool clean_for_chf = ChfCheck(get_indices(so.signal_jets), buffer, *def); 
-  if (clean_for_chf) return; 
-  counter["pass_chf"] += weight; 
     
   if (so.met.Mod() < 50e3) return; 
   counter["met_50"] += weight; 

@@ -105,7 +105,13 @@ public :
   std::vector<float>     *el_ptcone20;
   // std::vector<float>     *el_trackd0pv;
   // std::vector<float>     *el_trackz0pv;
-  std::vector<float>     *el_charge;
+  std::vector<float>     *el_ptcone30;
+  std::vector<float>     *el_topoEtcone30_corrected;
+  std::vector<float>     *el_trackIPEstimate_d0_unbiasedpvunbiased;
+  std::vector<float>     *el_trackIPEstimate_z0_unbiasedpvunbiased;
+  std::vector<float>     *el_trackIPEstimate_sigd0_unbiasedpvunbiased;
+
+  std::vector<float>   *el_charge;
   std::vector<float>   *el_cl_E;
   std::vector<float>   *el_cl_eta;
   std::vector<float>   *el_cl_phi;
@@ -145,6 +151,12 @@ public :
   std::vector<float>   *mu_staco_cov_qoverp_exPV; 
   std::vector<float>   *mu_staco_d0_exPV; 
   std::vector<float>   *mu_staco_z0_exPV; 
+  std::vector<float>   *mu_staco_ptcone30_trkelstyle;
+  std::vector<float>   *mu_staco_etcone30;
+  std::vector<float>   *mu_staco_trackIPEstimate_d0_unbiasedpvunbiased;
+  std::vector<float>   *mu_staco_trackIPEstimate_z0_unbiasedpvunbiased;
+  std::vector<float>   *mu_staco_trackIPEstimate_sigd0_unbiasedpvunbiased;
+
 
   // Jet Stuff
   int           jet_n;

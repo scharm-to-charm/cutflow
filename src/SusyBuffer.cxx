@@ -126,6 +126,13 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("el_ptcone20", &el_ptcone20); // for IsSignal
   //fChain->SetBranch("el_trackd0pv", &el_trackd0pv); // for IsSignal
   //fChain->SetBranch("el_trackz0pv", &el_trackz0pv); // for IsSignal
+  //extra for new isolation etc
+  fChain->SetBranch("el_ptcone30", &el_ptcone30);
+  fChain->SetBranch("el_topoEtcone30_corrected", &el_topoEtcone30_corrected);
+  fChain->SetBranch("el_trackIPEstimate_d0_unbiasedpvunbiased", &el_trackIPEstimate_d0_unbiasedpvunbiased);
+  fChain->SetBranch("el_trackIPEstimate_z0_unbiasedpvunbiased", &el_trackIPEstimate_z0_unbiasedpvunbiased);
+  fChain->SetBranch("el_trackIPEstimate_sigd0_unbiasedpvunbiased", &el_trackIPEstimate_sigd0_unbiasedpvunbiased);
+  //
   fChain->SetBranch("el_charge", &el_charge); 
   fChain->SetBranch("el_cl_E", &el_cl_E); 
   fChain->SetBranch("el_cl_eta", &el_cl_eta); 
@@ -165,6 +172,13 @@ SusyBuffer::SusyBuffer(SmartChain *fChain):
   fChain->SetBranch("mu_staco_cov_qoverp_exPV", &mu_staco_cov_qoverp_exPV);
   fChain->SetBranch("mu_staco_z0_exPV", &mu_staco_z0_exPV); 
   fChain->SetBranch("mu_staco_d0_exPV", &mu_staco_d0_exPV); 
+
+  fChain->SetBranch("mu_staco_ptcone30_trkelstyle", &mu_staco_ptcone30_trkelstyle);
+  fChain->SetBranch("mu_staco_etcone30", &mu_staco_etcone30);
+  fChain->SetBranch("mu_staco_trackIPEstimate_d0_unbiasedpvunbiased", &mu_staco_trackIPEstimate_d0_unbiasedpvunbiased);
+  fChain->SetBranch("mu_staco_trackIPEstimate_z0_unbiasedpvunbiased", &mu_staco_trackIPEstimate_z0_unbiasedpvunbiased);
+  fChain->SetBranch("mu_staco_trackIPEstimate_sigd0_unbiasedpvunbiased", &mu_staco_trackIPEstimate_sigd0_unbiasedpvunbiased);
+
 
   fChain->SetBranch(jc + "_n", &jet_n); 
   fChain->SetBranch(jc + "_pt", &jet_pt); 
