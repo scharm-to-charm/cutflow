@@ -69,7 +69,7 @@ namespace {
 
 CtagCalibration::CtagCalibration(std::string cdi_file, std::string env_file):
   m_cdi(0),
-  m_jet_author("AntiKt4TopoLCJVF")
+  m_jet_author("AntiKt4TopoLCJVF0_5")
 {
   // This is a terrible hack to get around the werid interface to the cdi:
   // for some reason the CDI constructor wants an .env file, which
@@ -89,15 +89,12 @@ CtagCalibration::CtagCalibration(std::string cdi_file, std::string env_file):
     "no file " + cdi_file + " found");
 
   m_cdi = new Analysis::CalibrationDataInterfaceROOT(
-    "JetFitterCOMBCharm", env_file, "");
+    "JetFitterCharm", env_file, "");
 
-  // WARNING: these are hacks until we get a better CDI
-  m_op_string = "-1_0_-0_82";
+  m_op_string = "-0_9_0_95";
 
   check_cdi();
 
-  // note that the cuts used here aren't consistent with the ones
-  // listed above.
   m_anti_u_cut = JFC_MEDIUM_ANTI_U_CUT;
   m_anti_b_cut = JFC_MEDIUM_ANTI_B_CUT;
 
