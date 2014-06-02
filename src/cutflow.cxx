@@ -679,8 +679,7 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 		      double weight){
   counter["total"] += weight; 
     
-  bool met_trig = buffer.xe80_tclcw_tight || buffer.xe80T_tclcw_loose ||
-    buffer.xe80T_tclcw_loose; 
+  bool met_trig = buffer.xe80_tclcw_tight; 
   if (!met_trig) return; 
   counter["met_trigger"] += weight; 
 
