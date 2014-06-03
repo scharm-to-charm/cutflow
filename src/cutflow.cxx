@@ -343,8 +343,8 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator jitr = all_jets.begin();
 	 jitr != all_jets.end(); jitr++) { 
       bool is_good_pt = jitr->Pt() > 20e3; 
-      bool is_good_eta = std::abs(jitr->Eta()) < 2.8; 
-      if (is_good_eta && is_good_pt) { 
+      // bool is_good_eta = std::abs(jitr->Eta()) < 2.8; 
+      if (is_good_pt) { 
 	preselected_jets.push_back(*jitr); 
       }
     }
@@ -379,9 +379,7 @@ int main (int narg, const char* argv[]) {
 	 itr != good_jets.end(); itr++) { 
       bool signal_pt = itr->Pt() > 20e3; // was 30, for mindphi(jet-MET)
 
-      // the eta requirement for tagging used to be made here, now it's 
-      // done when we check for tags. 
-      bool ok_eta = std::abs(itr->Eta()) < 2.8; // was 2.5 (for tagging)
+      bool ok_eta = std::abs(itr->Eta()) < 2.5; // (for tagging)
 
       float jet_jvf = buffer.jet_jvtxf->at(itr->index); 
       bool ok_jvf_frac = jet_jvf > 0.5; 
