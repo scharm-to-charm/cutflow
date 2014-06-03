@@ -7,11 +7,11 @@ USE_LIBS="
  egammaEvent JetResolution JetUncertainties\
  MissingETUtility MuonEfficiencyCorrections MuonMomentumCorrections\
  PileupReweighting ReweightUtils\
- TauCorrUncert BCHCleaningTool\
+ TauCorrUncert BCHCleaningTool PileupReweighting\
  TrigMuonEfficiency ElectronEfficiencyCorrection PATCore TileTripReader"
 
 USE_HEADER="SUSYTools MissingETUtility egammaAnalysisUtils GoodRunsLists\
- CalibrationDataInterface TauCorrUncert"
+ CalibrationDataInterface TauCorrUncert PileupReweighting"
 
 
 if [[ $1 == '-l' ]]
