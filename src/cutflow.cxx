@@ -4,6 +4,7 @@
 #include "CutCounter.hh"
 #include "ctag_defs.hh"		// for JFC_MEDIUM_* cuts
 #include "CtagCalibration.hh"
+#include "PileupReweighting.hh"
 #include "mctlib.hh"
 #include "sbottom_functions.hh"
 
@@ -25,6 +26,8 @@
 // ============= external files ============
 const std::string g_grl_file = "grl.xml"; 
 const std::string g_btag_file = "cdi.root"; 
+const std::string g_pu_config = "scharm.PRW.root";
+const std::string g_pu_lumicalc = "ilumicalc_histograms.root";
 // ================= output ================
 // list of set branches (set to "" for std::cout)
 const std::string g_set_branches = "branches.txt"; 
@@ -182,17 +185,19 @@ int main (int narg, const char* argv[]) {
   }
 
   CtagCalibration* ctag_cal = 0; 
+  PileupReweighting* prw = 0;
   if (!is_data) { 
     try { 
       ctag_cal = new CtagCalibration(g_btag_file); 
     } catch (std::runtime_error& err) { 
       printf(red("disabled tagging SF: %s\n").c_str(), err.what()); 
     }
+    prw = new PileupReweighting(g_pu_config, g_pu_lumicalc);
   }
 
   CutCounter counter; 
   CutCounter signal_counter; 
-  CutCounter signal_counter_mc_wt; 
+  CutCounter signal_counter_pu_wt; 
   CutCounter signal_counter_ctag_wt; 
   CutCounter el_cr_counter; 
   CutCounter mu_cr_counter; 
@@ -579,12 +584,14 @@ int main (int narg, const char* argv[]) {
 	ctag_wt *= get_ctag_sf(so.signal_jets.at(1), buffer, *ctag_cal); 
       }
     }
+    double pu_wt = 1;
+    if (prw) pu_wt *= prw->get_pileup_weight(buffer);
 
     // ---- run the event-wise selections -----
     signal_selection(so, def, buffer, signal_counter); 
-    signal_selection(so, def, buffer, signal_counter_mc_wt, 
-		     buffer.get_mcevt_weight()); 
-    signal_selection(so, def, buffer, signal_counter_ctag_wt, ctag_wt); 
+    signal_selection(so, def, buffer, signal_counter_pu_wt, pu_wt);
+    signal_selection(so, def, buffer, signal_counter_ctag_wt, 
+		     ctag_wt * pu_wt);
     cra_1l_selection(so, def, buffer, cra_1l_counter); 
     cra_sf_selection(so, def, buffer, cra_sf_counter); 
     cra_of_selection(so, def, buffer, cra_of_counter); 
@@ -594,8 +601,8 @@ int main (int narg, const char* argv[]) {
   // ------ dump results ------
   dump_counts(counter, "objects"); 
   dump_counts(signal_counter, "signal region"); 
-  dump_counts(signal_counter_mc_wt, "signal region evt wt"); 
-  dump_counts(signal_counter_ctag_wt, "signal region tag wt"); 
+  dump_counts(signal_counter_pu_wt, "signal region pu wt"); 
+  dump_counts(signal_counter_ctag_wt, "signal region tag + pu wt"); 
   dump_counts(cra_1l_counter, "CRA 1L"); 
   dump_counts(cra_sf_counter, "CRA SF"); 
   dump_counts(cra_of_counter, "CRA DF"); 
@@ -1243,7 +1250,7 @@ void dump_counts(const CutCounter& counter, std::string name) {
     if (name.size() < pad_size) { 
       name.insert(0, pad_size - name.size(), ' '); 
     }
-    printf("%s: %.1f\n", name.c_str(), itr->second); 
+    printf("%s: %.3f\n", name.c_str(), itr->second); 
   }
 }
 
