@@ -191,8 +191,11 @@ int main (int narg, const char* argv[]) {
       ctag_cal = new CtagCalibration(g_btag_file); 
     } catch (std::runtime_error& err) { 
       printf(red("disabled tagging SF: %s\n").c_str(), err.what()); 
+    } try {
+      prw = new PileupReweighting(g_pu_config, g_pu_lumicalc);
+    } catch (std::runtime_error& err) {
+      printf(red("disabled pileup RW: %s\n").c_str(), err.what()); 
     }
-    prw = new PileupReweighting(g_pu_config, g_pu_lumicalc);
   }
 
   CutCounter counter; 
