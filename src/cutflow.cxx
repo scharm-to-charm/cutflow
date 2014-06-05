@@ -886,13 +886,10 @@ void cra_of_selection(const SelectionObjects& so, SUSYObjDef* def,
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
 
-  // control leptons are a subset of the veto leptons, so we shouldn't
-  // have any additional veto leptons. 
-  int extra_leptons = 
-    (so.after_overlap_el.size() + so.after_overlap_mu.size() ) - 
-    (so.signal_electrons.size() + so.signal_muons.size());
-  if (extra_leptons != 0) return; 
-  counter["pass_lepton_veto"] += weight; 
+  int n_veto_lep = so.after_overlap_el.size() + so.after_overlap_mu.size();
+  int n_sig_lep = so.signal_electrons.size() + so.signal_muons.size();
+  if (n_veto_lep != 2 || n_sig_lep != 2) return; 
+  counter["two_leptons"] += weight; 
 
   bool ofos_pair = has_os_of_pair(
     so.signal_electrons, so.signal_muons, buffer); 
