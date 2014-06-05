@@ -398,10 +398,9 @@ int main (int narg, const char* argv[]) {
 	   itr = so.after_overlap_el.begin(); 
 	 itr != so.after_overlap_el.end(); itr++) { 
       
-      bool control_pt = itr->Pt() > 20e3 || true; 
       bool tight_pp = buffer.el_tightPP->at(itr->index);
       bool rel_iso = buffer.el_ptcone20->at(itr->index) / itr->Pt() < 0.1;
-      if (control_pt && tight_pp && rel_iso) {
+      if (tight_pp && rel_iso) {
 	so.signal_electrons_oldiso.push_back(*itr); 
       }
 	
@@ -421,7 +420,7 @@ int main (int narg, const char* argv[]) {
 	so.signal_electrons.push_back(*itr); 
       }
 
-      if( signalElExp && control_pt && tight_pp && rel_iso) { 
+      if( signalElExp && tight_pp && rel_iso) { 
 	so.signal_electrons_bothiso.push_back(*itr); 
       }
     }
@@ -432,9 +431,8 @@ int main (int narg, const char* argv[]) {
     for (std::vector<IdLorentzVector>::const_iterator
 	   itr = so.after_overlap_mu.begin(); 
 	 itr != so.after_overlap_mu.end(); itr++) { 
-      bool control_pt = itr->Pt() > 20e3 || true; 
       bool iso = buffer.mu_staco_ptcone20->at(itr->index) < 1.8e3;
-      if (control_pt && iso) { 
+      if (iso) { 
 	so.signal_muons_oldiso.push_back(*itr); 
       }
 
@@ -454,7 +452,7 @@ int main (int narg, const char* argv[]) {
 	so.signal_muons.push_back(*itr); 
       }
 
-      if( signalMuonExp && iso && control_pt ) { 
+      if( signalMuonExp && iso ) { 
 	so.signal_muons_bothiso.push_back(*itr); 
       }
     }
