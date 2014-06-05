@@ -589,13 +589,13 @@ int main (int narg, const char* argv[]) {
     if (prw) pu_wt *= prw->get_pileup_weight(buffer);
 
     // ---- run the event-wise selections -----
+    double full_wt = ctag_wt * pu_wt;
     signal_selection(so, def, buffer, signal_counter); 
     signal_selection(so, def, buffer, signal_counter_pu_wt, pu_wt);
-    signal_selection(so, def, buffer, signal_counter_ctag_wt, 
-		     ctag_wt * pu_wt);
-    cra_1l_selection(so, def, buffer, cra_1l_counter); 
-    cra_sf_selection(so, def, buffer, cra_sf_counter); 
-    cra_of_selection(so, def, buffer, cra_of_counter); 
+    signal_selection(so, def, buffer, signal_counter_ctag_wt, full_wt);
+    cra_1l_selection(so, def, buffer, cra_1l_counter, full_wt);
+    cra_sf_selection(so, def, buffer, cra_sf_counter, full_wt);
+    cra_of_selection(so, def, buffer, cra_of_counter, full_wt);
 
   } // end of event loop
 
@@ -811,31 +811,25 @@ void cra_sf_selection(const SelectionObjects& so, SUSYObjDef* def,
 		      double weight){
   counter["total"] += weight; 
 
-  bool pass_mu = buffer.EF_mu18_tight_mu8_EFFS;
-  bool pass_el = buffer.EF_2e12Tvh_loose1;
-  bool pass_lepton_trigger = pass_el || pass_mu;
+  bool pass_lepton_trigger = common_lepton_trigger_matching(
+    so, buffer, counter, weight); 
   if (!pass_lepton_trigger) return; 
-  counter["pass_two_lepton_trig"] += weight;
-
-  bool trig_matched = so.has_dilep_trigger_matched_muon ||
-    so.has_dilep_trigger_matched_electron;
-  if (!trig_matched) return;
-  counter["pass_trigger_match"] += weight;
     
   bool pass_preselection = common_preselection(
     so, def, buffer, counter, weight); 
   if (!pass_preselection) return; 
+
+  // signal leptons are a subset of the veto leptons
+  int n_veto_lep = so.after_overlap_el.size() + so.after_overlap_mu.size();
+  int n_sig_lep = so.signal_electrons.size() + so.signal_muons.size();
+  if (n_veto_lep != 2 || n_sig_lep != 2) return; 
+  counter["two_leptons"] += weight; 
 
   bool ossf_pair = has_os_sf_pair(
     so.signal_electrons, so.signal_muons, buffer); 
   if (!ossf_pair) return; 
   counter["pass_ossf"] += weight; 
   
-  // signal leptons are a subset of the veto leptons
-  int n_veto_lep = so.after_overlap_el.size() + so.after_overlap_mu.size(); 
-  if (n_veto_lep != 2) return; 
-  counter["pass_lepton_veto"] += weight; 
-
   int n_mu = so.signal_muons.size();
   IdLorentzVector lep1 = n_mu == 2 ? 
     so.signal_muons.at(0) : so.signal_electrons.at(0); 
