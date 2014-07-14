@@ -23,7 +23,7 @@ double mctlib::mctcorr(const double v1[4],const double v2[4]
 
   if (m_pb==0) {
 
-    return mct(v1,v2);    
+    return mct(v1,v2);
 
   } else {
 
@@ -40,7 +40,7 @@ double mctlib::mctcorr(const double v1[4],const double v2[4]
 
 // Boost v1 and v2 with Ecm
 // v1 and v2 were boosted in -ve x direction,
-// so to correct we boost v1 and v2 in +ve x direction 
+// so to correct we boost v1 and v2 in +ve x direction
 
     double beta = m_pb/ecm;
     double gamma = 1.0/sqrt(1.0-beta*beta);
@@ -57,7 +57,7 @@ double mctlib::mctcorr(const double v1[4],const double v2[4]
 
 // Boost v1 and v2 with e0
 // v1 and v2 were boosted in -ve x direction,
-// so to correct we boost v1 and v2 in +ve x direction  
+// so to correct we boost v1 and v2 in +ve x direction
 
     beta = m_pb/(v1[0]+v2[0]+vds[0]
 	       +sqrt(pow(ptm[0],2)+pow(ptm[1],2)+4.0*pow(mxlo,2)));
@@ -78,14 +78,14 @@ double mctlib::mctcorr(const double v1[4],const double v2[4]
     } else {
       if (axehat<0) {
 	return m_mctehat;
-      } else {    
+      } else {
 	return sqrt(fmax(pow(vey1+vey2,2)-pow(vb1[2]-vb2[2],2),0.0));
       }
     }
   }
 }
 
-double mctlib::mct(const double v1[4],const double v2[4]) 
+double mctlib::mct(const double v1[4],const double v2[4])
 {
   double et1 = sqrt(fmax(v1[0]*v1[0]-v1[3]*v1[3],0.0));
   double et2 = sqrt(fmax(v2[0]*v2[0]-v2[3]*v2[3],0.0));
@@ -145,7 +145,7 @@ double mctlib::mt2(const double v1[4],const double v2[4]
   for (int i=0;i<4;i++)
     if ( (mctdsqr[i]>mctminsqr) && (mctdsqr[i]<mctmaxsqr) )
       mdmin = fmin(mdmin,mctminmt2(mctdsqr[i],m1sqr,m2sqr,chisqr));
-  
+
   return fmax(fmax(mdmin,m1+chi),m2+chi);
 }
 
@@ -189,7 +189,7 @@ double mctlib::mt2neg(const double v1[4],const double v2[4]
   // Else use balanced solution
   double mctminsqr = pow(mct(v1,v2),2);
   double mdmin = mctminmt2(mctminsqr,m1sqr,m2sqr,chisqr);
-  
+
   return fmax(fmax(mdmin,m1+chi),m2+chi);
 }
 
@@ -206,7 +206,7 @@ double mctlib::mcy(const double v1[4],const double v2[4]
 
   if (pb==0) {
 
-    return mct(v1,v2);    
+    return mct(v1,v2);
 
   } else {
 
@@ -235,7 +235,7 @@ double mctlib::mcx(const double v1[4],const double v2[4]
 
   if (pb==0) {
 
-    return mct(v1,v2);    
+    return mct(v1,v2);
 
   } else {
 

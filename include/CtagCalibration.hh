@@ -1,19 +1,19 @@
 #ifndef CTAG_CALIBRATION_HH
 #define CTAG_CALIBRATION_HH
 
-#include <string> 
+#include <string>
 #include <map>
 #include "ctag_defs.hh"
 
-class BaselineJet; 
+class BaselineJet;
 
-namespace Analysis { 
-  class CalibrationDataInterfaceROOT; 
-  class CalibrationDataVariables; 
+namespace Analysis {
+  class CalibrationDataInterfaceROOT;
+  class CalibrationDataVariables;
 }
 
 // input structure for both cuts and SF
-struct JetTagFactorInputs { 
+struct JetTagFactorInputs {
   double pt; 			// in MeV
   double eta; 			
   double anti_b; 		// log(pc/pb)
@@ -23,55 +23,55 @@ struct JetTagFactorInputs {
 };
 
 // translator from the int value in D3PDs to enums used here
-ctag::Flavor get_flavor(int flavor_truth_label); 
+ctag::Flavor get_flavor(int flavor_truth_label);
 
 
-// the output structure. 'up' and 'down' variations may be symmetric in 
-// many cases, but we keep both for flexibility. 
-struct JetTagSF { 
-  JetTagSF(const std::pair<double, double>&); 
-  JetTagSF(); 
-  double nominal; 
-  double up; 
-  double down; 
-}; 
+// the output structure. 'up' and 'down' variations may be symmetric in
+// many cases, but we keep both for flexibility.
+struct JetTagSF {
+  JetTagSF(const std::pair<double, double>&);
+  JetTagSF();
+  double nominal;
+  double up;
+  double down;
+};
 // Inevatably we'll multiply the SF
-JetTagSF operator*(const JetTagSF&, const JetTagSF&); 
-JetTagSF& operator*=(JetTagSF&, const JetTagSF&); 
+JetTagSF operator*(const JetTagSF&, const JetTagSF&);
+JetTagSF& operator*=(JetTagSF&, const JetTagSF&);
 
 
-// The class responsible for the actual calibration 
+// The class responsible for the actual calibration
 class CtagCalibration
 {
-public: 
+public:
   // For some reason the CDI wants an .env file, so we create one in /tmp/
-  // which points to the actual CDI file. Ugly for sure, if you use it with 
+  // which points to the actual CDI file. Ugly for sure, if you use it with
   // a batch job you may want to randomize the env_file name to prevent
-  // overwrites. 
-  CtagCalibration(std::string cdi_file, 
-		  std::string env_file = "/tmp/btag.env"); 
-  ~CtagCalibration(); 
-  JetTagSF scale_factor(const JetTagFactorInputs& jet_tf_inputs) const; 
-  bool pass(const JetTagFactorInputs& jet_tf_inputs) const; 
-private: 
+  // overwrites.
+  CtagCalibration(std::string cdi_file,
+		  std::string env_file = "/tmp/btag.env");
+  ~CtagCalibration();
+  JetTagSF scale_factor(const JetTagFactorInputs& jet_tf_inputs) const;
+  bool pass(const JetTagFactorInputs& jet_tf_inputs) const;
+private:
   // don't allow copying or assignment
-  CtagCalibration(const CtagCalibration&){} 
-  CtagCalibration& operator=(const CtagCalibration&); 
+  CtagCalibration(const CtagCalibration&){}
+  CtagCalibration& operator=(const CtagCalibration&);
 
-  typedef std::pair<double, double> CalResult; 
-  void check_cdi() const; 
-  Analysis::CalibrationDataVariables get_vars(double pt, double eta) const; 
-  std::string get_label(ctag::Flavor) const; 
-  void set_indices(ctag::Flavor); 
+  typedef std::pair<double, double> CalResult;
+  void check_cdi() const;
+  Analysis::CalibrationDataVariables get_vars(double pt, double eta) const;
+  std::string get_label(ctag::Flavor) const;
+  void set_indices(ctag::Flavor);
 
-  Analysis::CalibrationDataInterfaceROOT* m_cdi; 
-  std::string m_op_string; 
-  std::string m_jet_author; 
-  double m_anti_u_cut; 
-  double m_anti_b_cut; 
-  std::map<ctag::Flavor, unsigned> m_flav_op_eff_index; 
-  std::map<ctag::Flavor, unsigned> m_flav_op_sf_index; 
-}; 
+  Analysis::CalibrationDataInterfaceROOT* m_cdi;
+  std::string m_op_string;
+  std::string m_jet_author;
+  double m_anti_u_cut;
+  double m_anti_b_cut;
+  std::map<ctag::Flavor, unsigned> m_flav_op_eff_index;
+  std::map<ctag::Flavor, unsigned> m_flav_op_sf_index;
+};
 
 
-#endif 
+#endif
