@@ -216,7 +216,7 @@ int main (int narg, const char* argv[]) {
   CutCounter cra_of_counter;
 
   // const long long max_entries = 10LL;
-  const long long max_entries = 100000LL;
+  const long long max_entries = 100000000LL;
   const unsigned n_entries = std::min(chain->GetEntries(),max_entries);
   printf("looping over %i entries\n", n_entries);
   for (unsigned nnn = 0; nnn < n_entries; nnn++) {
@@ -614,7 +614,7 @@ int main (int narg, const char* argv[]) {
   dump_counts(counter, "objects");
   dump_counts(signal_counter, "signal region");
   dump_counts(signal_counter_pu_wt, "signal region pu wt");
-  dump_counts(signal_counter_ctag_wt, "signal region tag + pu wt");
+  dump_counts(signal_counter_ctag_wt, "signal region tag + pu + lepid wt");
   dump_counts(cra_1l_counter, "CRA 1L");
   dump_counts(cra_sf_counter, "CRA SF");
   dump_counts(cra_of_counter, "CRA DF");
@@ -722,8 +722,8 @@ void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
   if (so.signal_jets.at(0).Pt() < 130e3) return;
   counter["leading_jet_130"] += weight;
 
-  if (so.signal_jets.at(1).Pt() < 50e3) return;
-  counter["second_jet_50"] += weight;
+  if (so.signal_jets.at(1).Pt() < 100e3) return;
+  counter["second_jet_100"] += weight;
 
   //if (so.signal_jets.size() > 2) {
   //  if (so.signal_jets.at(2).Pt() > 50e3) return;
