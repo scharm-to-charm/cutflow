@@ -120,6 +120,13 @@ double get_min_dphi(const std::vector<IdLorentzVector>& jets,
 // ctag sf function (wrapper for CtagCalibration)
 double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer, 
 		   const CtagCalibration& ctag_cal); 
+
+// lepton reco / ID sf function
+double get_lepid_sf(const std::vector<IdLorentzVector>& electrons,
+		    const std::vector<IdLorentzVector>& muons,
+		    const SusyBuffer& buffer, SUSYObjDef& def,
+		    unsigned run_number);
+
 // bad tile veto 
 bool has_bad_tile(const std::vector<IdLorentzVector>& jets, 
 		  const TVector2& met, const SusyBuffer& buffer); 
@@ -584,10 +591,16 @@ int main (int narg, const char* argv[]) {
       }
     }
     double pu_wt = 1;
-    if (prw) pu_wt *= prw->get_pileup_weight(buffer);
+    double lepton_id_wt = 1;
+    if (prw) {
+      pu_wt *= prw->get_pileup_weight(buffer);
+      unsigned random_run = prw->random_run_number(buffer);
+      lepton_id_wt = get_lepid_sf(
+	so.signal_electrons, so.signal_muons, buffer, *def, random_run);
+    }
 
     // ---- run the event-wise selections -----
-    double full_wt = ctag_wt * pu_wt;
+    double full_wt = ctag_wt * pu_wt * lepton_id_wt;
     signal_selection(so, def, buffer, signal_counter); 
     signal_selection(so, def, buffer, signal_counter_pu_wt, pu_wt);
     signal_selection(so, def, buffer, signal_counter_ctag_wt, full_wt);
@@ -1192,6 +1205,28 @@ double get_ctag_sf(const IdLorentzVector& jet, const SusyBuffer& buffer,
   if (std::fabs(inputs.eta) > 2.5) return 1.0;
   // dump(inputs); 
   return ctag_cal.scale_factor(inputs).nominal; 
+}
+
+double get_lepid_sf(const std::vector<IdLorentzVector>& electrons,
+		    const std::vector<IdLorentzVector>& muons,
+		    const SusyBuffer& buffer, SUSYObjDef& def,
+		    unsigned run_number) {
+  double id_sf = 1.0;
+  typedef std::vector<IdLorentzVector>::const_iterator Iter;
+  for (Iter itr = electrons.begin(); itr != electrons.end(); itr++) {
+    id_sf *= def.GetSignalElecSF(
+      buffer.el_cl_eta->at(itr->index),
+      itr->Pt(),
+      true, 			// use reco SF
+      true, 			// use id SF
+      false, 			// use trigger SF
+      run_number,
+      SystErr::NONE);
+  }
+  for (Iter itr = muons.begin(); itr != muons.end(); itr++) {
+    id_sf *= def.GetSignalMuonSF(itr->index, SystErr::NONE);
+  }
+  return id_sf;
 }
 
 // ================= object / event quality ===========
