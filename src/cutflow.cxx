@@ -73,6 +73,9 @@ struct SelectionObjects
 };
 
 // multiple object selections are called within the event loop
+void official_signal_selection(const SelectionObjects&, SUSYObjDef* def,
+			       const SusyBuffer& buffer, CutCounter& counter,
+			       double pu_weight = 1.0, double tag_wt = 1.0);
 void signal_selection(const SelectionObjects&, SUSYObjDef* def,
 		      const SusyBuffer& buffer, CutCounter& counter,
 		      double weight = 1.0);
@@ -206,6 +209,7 @@ int main (int narg, const char* argv[]) {
   }
 
   CutCounter counter;
+  CutCounter official_count;
   CutCounter signal_counter;
   CutCounter signal_counter_pu_wt;
   CutCounter signal_counter_ctag_wt;
@@ -601,6 +605,7 @@ int main (int narg, const char* argv[]) {
 
     // ---- run the event-wise selections -----
     double full_wt = ctag_wt * pu_wt * lepton_id_wt;
+    official_signal_selection(so, def, buffer, official_count, pu_wt, ctag_wt);
     signal_selection(so, def, buffer, signal_counter);
     signal_selection(so, def, buffer, signal_counter_pu_wt, pu_wt);
     signal_selection(so, def, buffer, signal_counter_ctag_wt, full_wt);
@@ -612,6 +617,7 @@ int main (int narg, const char* argv[]) {
 
   // ------ dump results ------
   dump_counts(counter, "objects");
+  dump_counts(official_count, "official count");
   dump_counts(signal_counter, "signal region");
   dump_counts(signal_counter_pu_wt, "signal region pu wt");
   dump_counts(signal_counter_ctag_wt, "signal region tag + pu + lepid wt");
@@ -692,6 +698,75 @@ bool common_lepton_trigger_matching(const SelectionObjects& so,
 // ===============================================
 // ========= eventwise signal selection ==========
 // ===============================================
+
+// this one doesn't give as many subcuts, for display in the aux data
+void official_signal_selection(const SelectionObjects& so, SUSYObjDef* def,
+			       const SusyBuffer& buffer, CutCounter& counter,
+			       double weight, double tag_wt){
+  counter["total"] += weight;
+
+  bool met_trig = buffer.xe80_tclcw_tight;
+  if (!met_trig) return;
+  counter["met_trigger"] += weight;
+
+  CutCounter dummy;
+  bool pass_preselection = common_preselection(
+    so, def, buffer, dummy, weight);
+  if (!pass_preselection) return;
+  counter["cleaning_cuts"] += weight;
+
+  if (so.after_overlap_mu.size()) return;
+  counter["muon_veto"] += weight;
+
+  if (so.after_overlap_el.size()) return;
+  counter["electron_veto"] += weight;
+
+  if (so.met.Mod() < 150e3) return;
+  counter["met_150"] += weight;
+
+  const size_t n_jets = 2;
+  if (so.signal_jets.size() < n_jets) return;
+  counter["n_jet"] += weight; //Will's label: Minimum jet multiplicity
+
+  if (so.signal_jets.at(0).Pt() < 130e3) return;
+  counter["leading_jet_130"] += weight;
+
+  if (so.signal_jets.at(1).Pt() < 100e3) return;
+  counter["second_jet_100"] += weight;
+
+  double mass_eff = so.met.Mod() + scalar_sum_pt(so.signal_jets, 2);
+  if (so.met.Mod() / mass_eff < 0.25) return;
+  counter["met_eff"] += weight;
+
+  bool medium_first =  has_medium_tag(so.signal_jets.at(0), buffer);
+  bool medium_second = has_medium_tag(so.signal_jets.at(1), buffer);
+
+  if (! (medium_first || medium_second) ) return;
+  counter["at_least_one_ctag"] += weight * tag_wt;
+  if (! (medium_first && medium_second) ) return;
+  counter["two_ctag"] += weight * tag_wt;
+
+  double min_dphi = get_min_dphi(so.signal_jets, so.met);
+  if (min_dphi < 0.4) return;
+  counter["dphi_jetmet_min"] += weight * tag_wt;
+
+  double mass_cc = (so.signal_jets.at(0) + so.signal_jets.at(1)).M();
+  if (mass_cc < 200e3) return;
+  counter["m_cc"] += weight * tag_wt;
+
+  double mass_ct = get_mctcorr(so.signal_jets.at(0),
+			       so.signal_jets.at(1),
+			       TLorentzVector(),
+			       so.met);
+  if (mass_ct < 150e3) return;
+  counter["m_ct_150"] += weight * tag_wt;
+  if (mass_ct < 200e3) return;
+  counter["m_ct_200"] += weight * tag_wt;
+  if (mass_ct < 250e3) return;
+  counter["m_ct_250"] += weight * tag_wt;
+
+} // end of official signal region cutflow
+
 
 void signal_selection(const SelectionObjects& so, SUSYObjDef* def,
 		      const SusyBuffer& buffer, CutCounter& counter,
